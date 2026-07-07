@@ -3,6 +3,9 @@
 <head>
     <title>HTML Live Editor</title>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@100;200;300;400;500;600;700;800;900&family=Alex+Brush&family=Allison&family=Allura&family=Archivo:wght@100;200;300;400;500;600;700;800;900&family=Barlow:wght@100;200;300;400;500;600;700;800;900&family=Bilbo+Swash+Caps&family=Bitter:wght@100;200;300;400;500;600;700;800;900&family=Charmonman:wght@400;700&family=Comfortaa:wght@300;400;500;600;700&family=DM+Sans:wght@100;200;300;400;500;600;700;800;900&family=Dancing+Script:wght@400;500;600;700&family=Epilogue:wght@100;200;300;400;500;600;700;800;900&family=Figtree:wght@300;400;500;600;700;800;900&family=Fraunces:wght@100;200;300;400;500;600;700;800;900&family=Hanken+Grotesk:wght@100;200;300;400;500;600;700;800;900&family=Homemade+Apple&family=IBM+Plex+Sans:wght@100;200;300;400;500;600;700&family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Inter+Tight:wght@100;200;300;400;500;600;700;800;900&family=Karla:wght@200;300;400;500;600;700;800&family=Lato:wght@100;300;400;700;900&family=Lekton:wght@400;700&family=Lexend:wght@100;200;300;400;500;600;700;800;900&family=Lexend+Deca:wght@100;200;300;400;500;600;700;800;900&family=Libre+Baskerville:wght@400;700&family=Libre+Franklin:wght@100;200;300;400;500;600;700;800;900&family=Lora:wght@400;500;600;700&family=Manrope:wght@200;300;400;500;600;700;800&family=Martel:wght@200;300;400;600;700;800;900&family=Merriweather:wght@300;400;700;900&family=Mitr:wght@200;300;400;500;600;700&family=Montserrat:wght@100;200;300;400;500;600;700;800;900&family=Mrs+Saint+Delafield&family=Mulish:wght@200;300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@100;200;300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@100;200;300;400;500;600;700;800;900&family=Noto+Sans+Thai:wght@100;200;300;400;500;600;700;800;900&family=Noto+Sans+Thai+Looped:wght@100;200;300;400;500;600;700;800;900&family=Noto+Serif+JP:wght@200;300;400;500;600;700;900&family=Noto+Serif+KR:wght@200;300;400;500;600;700;900&family=Nunito+Sans:wght@200;300;400;500;600;700;800;900&family=Open+Sans:wght@300;400;500;600;700;800&family=Oswald:wght@200;300;400;500;600;700&family=Outfit:wght@100;200;300;400;500;600;700;800;900&family=Overpass:wght@100;200;300;400;500;600;700;800;900&family=Oxygen:wght@300;400;700&family=Playfair+Display:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=Poppins:wght@100;200;300;400;500;600;700;800;900&family=Prompt:wght@100;200;300;400;500;600;700;800;900&family=Questrial&family=Quicksand:wght@300;400;500;600;700&family=Qwitcher+Grypen:wght@400;700&family=Raleway:wght@100;200;300;400;500;600;700;800;900&family=Readex+Pro:wght@200;300;400;500;600;700&family=Red+Hat+Display:wght@300;400;500;600;700;800;900&family=Rethink+Sans:wght@400;500;600;700;800&family=Roboto:wght@100;300;400;500;700;900&family=Roboto+Condensed:wght@100;200;300;400;500;600;700;800;900&family=Roboto+Flex:wght@100;200;300;400;500;600;700;800;900&family=Rubik:wght@300;400;500;600;700;800;900&family=Rufina:wght@400;700&family=Sofia+Sans+Extra+Condensed:wght@100;200;300;400;500;600;700;800;900&family=Sora:wght@100;200;300;400;500;600;700;800&family=Source+Sans+3:wght@200;300;400;500;600;700;800;900&family=Source+Serif+4:wght@200;300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=Spectral:wght@200;300;400;500;600;700;800&family=Sriracha&family=Syne:wght@400;500;600;700;800&family=Taviraj:wght@100;200;300;400;500;600;700;800;900&family=Titillium+Web:wght@200;300;400;600;700;900&family=Ubuntu:wght@300;400;500;700&family=Unbounded:wght@200;300;400;500;600;700;800;900&family=Urbanist:wght@100;200;300;400;500;600;700;800;900&family=Wix+Madefor+Display:wght@400;500;600;700;800&family=Work+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
         * { box-sizing: border-box; }
@@ -93,6 +96,93 @@
             cursor: pointer;
             padding: 1px 2px;
             vertical-align: middle;
+        }
+
+        /* ── Searchable font picker ───────────────────────── */
+        .font-picker {
+            position: relative;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .font-picker-toggle {
+            height: 26px;
+            min-width: 140px;
+            max-width: 180px;
+            padding: 0 22px 0 6px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 12px;
+            background: white;
+            cursor: pointer;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            position: relative;
+        }
+        .font-picker-toggle::after {
+            content: '\25BC';
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 8px;
+            color: #6b7280;
+            pointer-events: none;
+        }
+        .font-picker-toggle:hover {
+            border-color: #9ca3af;
+        }
+        .font-picker-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 9999;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            width: 240px;
+            margin-top: 2px;
+        }
+        .font-picker-dropdown.open { display: block; }
+        .font-picker-search {
+            width: 100%;
+            padding: 7px 10px;
+            border: none;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+            outline: none;
+            border-radius: 6px 6px 0 0;
+            box-sizing: border-box;
+        }
+        .font-picker-search::placeholder { color: #9ca3af; }
+        .font-picker-list {
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+        .font-picker-item {
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .font-picker-item:hover, .font-picker-item.highlighted {
+            background: #eff6ff;
+        }
+        .font-picker-item.selected {
+            background: #dbeafe;
+            font-weight: 600;
+        }
+        .font-picker-empty {
+            padding: 12px 10px;
+            color: #9ca3af;
+            font-size: 12px;
+            text-align: center;
         }
 
         .format-toolbar input[type="number"], .table-toolbar input[type="number"] {
@@ -593,15 +683,13 @@
         <option value="pre">Code Block</option>
     </select>
 
-    <select title="Font Family" onchange="cmd('fontName', this.value)">
-        <option value="Arial" selected>Arial</option>
-        <option value="Georgia">Georgia</option>
-        <option value="Times New Roman">Times New Roman</option>
-        <option value="Courier New">Courier New</option>
-        <option value="Verdana">Verdana</option>
-        <option value="Helvetica">Helvetica</option>
-        <option value="Trebuchet MS">Trebuchet</option>
-    </select>
+    <div class="font-picker" id="fontPicker">
+        <button type="button" class="font-picker-toggle" id="fontPickerToggle" title="Font Family">Arial</button>
+        <div class="font-picker-dropdown" id="fontPickerDropdown">
+            <input type="text" class="font-picker-search" id="fontPickerSearch" placeholder="Search fonts..." autocomplete="off">
+            <div class="font-picker-list" id="fontPickerList"></div>
+        </div>
+    </div>
 
     <select title="Font Size" onchange="cmd('fontSize', this.value)">
         <option value="1">8pt</option>
@@ -1124,10 +1212,22 @@
     //    stripped before syncing the iframe HTML back to the textarea.
 
     const ED_STYLE_ID = '__ed';
+    const ED_FONTS_ID = '__ed_fonts';
+    const GOOGLE_FONTS_URL = document.querySelector('link[href*="fonts.googleapis.com/css2"]')?.href || '';
 
     function injectEditorStyles() {
         const doc = preview.contentDocument;
         if (!doc) return;
+
+        // Inject Google Fonts link into iframe
+        if (GOOGLE_FONTS_URL && !doc.getElementById(ED_FONTS_ID)) {
+            const link = doc.createElement('link');
+            link.id = ED_FONTS_ID;
+            link.rel = 'stylesheet';
+            link.href = GOOGLE_FONTS_URL;
+            (doc.head || doc.documentElement).appendChild(link);
+        }
+
         let s = doc.getElementById(ED_STYLE_ID);
         if (!s) {
             s = doc.createElement('style');
@@ -1262,6 +1362,201 @@
         updateToolbarState();
     }
 
+    // ── Font application (handles weight variants) ──────────────────────
+
+    const FONT_WEIGHT_VARIANTS = {
+        'Barlow Bold': { family: 'Barlow', weight: '700' },
+        'Barlow ExtraLight': { family: 'Barlow', weight: '200' },
+        'Urbanist Bold': { family: 'Urbanist', weight: '700' },
+        'Work Sans Medium': { family: 'Work Sans', weight: '500' },
+        'Source Sans Pro': { family: 'Source Sans 3', weight: null }
+    };
+
+    function applyFont(value) {
+        if (!previewReady || !editorCore) return;
+
+        const variant = FONT_WEIGHT_VARIANTS[value];
+        if (variant) {
+            // Apply the base font family
+            cmd('fontName', variant.family);
+
+            // Apply weight if needed
+            if (variant.weight) {
+                const doc = preview.contentDocument;
+                const sel = doc.getSelection();
+                if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+                    const range = sel.getRangeAt(0);
+                    const span = doc.createElement('span');
+                    span.style.fontWeight = variant.weight;
+                    try {
+                        range.surroundContents(span);
+                        sel.removeAllRanges();
+                        const newRange = doc.createRange();
+                        newRange.selectNodeContents(span);
+                        sel.addRange(newRange);
+                    } catch (e) {
+                        // If surroundContents fails (partial selection), apply via execCommand workaround
+                        const fragment = range.extractContents();
+                        span.appendChild(fragment);
+                        range.insertNode(span);
+                    }
+                    onPreviewEdit();
+                    updateToolbarState();
+                }
+            }
+        } else {
+            cmd('fontName', value);
+        }
+    }
+
+    // ── Searchable font picker ────────────────────────────────────────────
+
+    const FONT_LIST = [
+        'Albert Sans','Alex Brush','Allison','Allura','Archivo','Arial',
+        'Barlow','Barlow Bold','Barlow ExtraLight','Bilbo Swash Caps','Bitter',
+        'Calibri','Calibri Light','Charmonman','Comfortaa','Comic Sans MS','Courier New',
+        'DM Sans','Dancing Script','Epilogue','Figtree','Fraunces',
+        'Gantari','Geist','Georgia',
+        'HP Simplified','HP Simplified Light','Hanken Grotesk','Homemade Apple','Host Grotesk',
+        'IBM Plex Sans','Inter','Inter Tight',
+        'Karla','Klavika','Klavika Light','Klavika Medium',
+        'Lato','Lekton','Lexend','Lexend Deca','Libre Baskerville','Libre Franklin','Lora',
+        'Lucida Sans Unicode','MS Sans Serif','Manrope','Martel','Merriweather','Mitr',
+        'Mona Sans','Montserrat','Mrs Saint Delafield','Mulish',
+        'National Park','Noto Sans JP','Noto Sans KR','Noto Sans Thai','Noto Sans Thai Looped',
+        'Noto Serif JP','Noto Serif KR','Nunito Sans',
+        'Open Sans','Oswald','Outfit','Overpass','Oxygen',
+        'Playfair Display','Plus Jakarta Sans','Poppins','Prompt',
+        'Questrial','Quicksand','Qwitcher Grypen',
+        'Raleway','Readex Pro','Red Hat Display','Rethink Sans',
+        'Roboto','Roboto Condensed','Roboto Flex','Rubik','Rufina',
+        'SimSun','Sofia Sans Extra Condensed','Sora','Source Sans Pro','Source Serif 4',
+        'Space Grotesk','Spectral','Sriracha','Syne',
+        'Tahoma','Taviraj','Times New Roman','Titillium Web','Trebuchet MS',
+        'Ubuntu','Unbounded','Urbanist','Urbanist Bold',
+        'Verdana','Wix Madefor Display','Work Sans','Work Sans Medium'
+    ];
+
+    function getFontFamily(name) {
+        const v = FONT_WEIGHT_VARIANTS[name];
+        return v ? v.family : name;
+    }
+
+    (function initFontPicker() {
+        const toggle = document.getElementById('fontPickerToggle');
+        const dropdown = document.getElementById('fontPickerDropdown');
+        const searchInput = document.getElementById('fontPickerSearch');
+        const listEl = document.getElementById('fontPickerList');
+        let selectedFont = 'Arial';
+        let highlightedIdx = -1;
+        let filteredFonts = FONT_LIST.slice();
+
+        function renderList() {
+            listEl.innerHTML = '';
+            highlightedIdx = -1;
+            if (filteredFonts.length === 0) {
+                listEl.innerHTML = '<div class="font-picker-empty">No fonts found</div>';
+                return;
+            }
+            filteredFonts.forEach((font, i) => {
+                const div = document.createElement('div');
+                div.className = 'font-picker-item' + (font === selectedFont ? ' selected' : '');
+                div.style.fontFamily = "'" + getFontFamily(font) + "', sans-serif";
+                div.textContent = font;
+                div.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    selectFont(font);
+                });
+                div.addEventListener('mouseenter', () => {
+                    highlightedIdx = i;
+                    updateHighlight();
+                });
+                listEl.appendChild(div);
+            });
+        }
+
+        function updateHighlight() {
+            const items = listEl.querySelectorAll('.font-picker-item');
+            items.forEach((el, i) => el.classList.toggle('highlighted', i === highlightedIdx));
+            if (highlightedIdx >= 0 && items[highlightedIdx]) {
+                items[highlightedIdx].scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        function selectFont(font) {
+            selectedFont = font;
+            toggle.textContent = font;
+            toggle.style.fontFamily = "'" + getFontFamily(font) + "', sans-serif";
+            closeDropdown();
+            applyFont(font);
+        }
+
+        function openDropdown() {
+            dropdown.classList.add('open');
+            searchInput.value = '';
+            filteredFonts = FONT_LIST.slice();
+            renderList();
+            setTimeout(() => searchInput.focus(), 0);
+        }
+
+        function closeDropdown() {
+            dropdown.classList.remove('open');
+        }
+
+        function isOpen() { return dropdown.classList.contains('open'); }
+
+        toggle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            if (isOpen()) closeDropdown(); else openDropdown();
+        });
+
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.toLowerCase();
+            filteredFonts = q ? FONT_LIST.filter(f => f.toLowerCase().includes(q)) : FONT_LIST.slice();
+            renderList();
+        });
+
+        searchInput.addEventListener('keydown', (e) => {
+            const items = listEl.querySelectorAll('.font-picker-item');
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                highlightedIdx = Math.min(highlightedIdx + 1, items.length - 1);
+                updateHighlight();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                highlightedIdx = Math.max(highlightedIdx - 1, 0);
+                updateHighlight();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (highlightedIdx >= 0 && filteredFonts[highlightedIdx]) {
+                    selectFont(filteredFonts[highlightedIdx]);
+                }
+            } else if (e.key === 'Escape') {
+                closeDropdown();
+            }
+        });
+
+        // Close when clicking outside
+        document.addEventListener('mousedown', (e) => {
+            if (isOpen() && !document.getElementById('fontPicker').contains(e.target)) {
+                closeDropdown();
+            }
+        });
+
+        // Public: update display from updateToolbarState
+        window.updateFontPickerDisplay = function(fontName) {
+            const match = FONT_LIST.find(f => {
+                const family = getFontFamily(f);
+                return family.toLowerCase() === fontName.toLowerCase();
+            });
+            if (match) {
+                selectedFont = match;
+                toggle.textContent = match;
+                toggle.style.fontFamily = "'" + getFontFamily(match) + "', sans-serif";
+            }
+        };
+    })();
+
     // ── Toolbar active states ────────────────────────────────────────────
 
     function updateToolbarState() {
@@ -1274,6 +1569,12 @@
             document.getElementById('btnStrike').classList.toggle('active',    doc.queryCommandState('strikeThrough'));
             document.getElementById('btnSuper').classList.toggle('active',     doc.queryCommandState('superscript'));
             document.getElementById('btnSub').classList.toggle('active',       doc.queryCommandState('subscript'));
+
+            // Update font picker to reflect current font at cursor
+            const currentFont = doc.queryCommandValue('fontName').replace(/['"]/g, '');
+            if (currentFont && typeof updateFontPickerDisplay === 'function') {
+                updateFontPickerDisplay(currentFont);
+            }
         } catch (e) {}
     }
 
