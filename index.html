@@ -1,0 +1,3145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HTML Live Editor</title>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background: #111827;
+            color: white;
+            padding: 15px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .toolbar {
+            background: white;
+            padding: 10px 20px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid #ddd;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        /* ── Shared toolbar bar styles ─────────────────────── */
+        .format-toolbar, .table-toolbar {
+            background: #f9fafb;
+            padding: 5px 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            border-bottom: 2px solid #e5e7eb;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .table-toolbar { background: #eff6ff; border-bottom-color: #bfdbfe; }
+
+        .format-toolbar button, .table-toolbar button {
+            padding: 3px 7px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            background: white;
+            font-size: 13px;
+            height: 26px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            font-family: Arial, sans-serif;
+        }
+
+        .format-toolbar button:hover, .table-toolbar button:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+
+        .format-toolbar button.active, .table-toolbar button.active {
+            background: #dbeafe;
+            border-color: #3b82f6;
+            color: #1d4ed8;
+        }
+
+        .format-toolbar select, .table-toolbar select {
+            height: 26px;
+            padding: 0 4px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 12px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .format-toolbar input[type="color"], .table-toolbar input[type="color"] {
+            width: 26px;
+            height: 26px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 1px 2px;
+            vertical-align: middle;
+        }
+
+        .format-toolbar input[type="number"], .table-toolbar input[type="number"] {
+            width: 48px;
+            height: 24px;
+            padding: 0 4px;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .format-toolbar label, .table-toolbar label {
+            display: inline-flex;
+            align-items: center;
+            gap: 1px;
+            cursor: pointer;
+        }
+
+        .sep {
+            display: inline-block;
+            width: 1px;
+            height: 18px;
+            background: #d1d5db;
+            margin: 0 3px;
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
+
+        .tb-label {
+            font-size: 11px;
+            color: #6b7280;
+            font-weight: 600;
+            white-space: nowrap;
+            margin: 0 2px;
+        }
+
+        .table-toolbar .tb-label { color: #3b82f6; }
+
+        button.primary {
+            background: #2563eb;
+            color: white;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button.secondary {
+            background: #e5e7eb;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .toolbar select {
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+        }
+
+        /* ── Layout ────────────────────────────────────────── */
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .pane {
+            display: flex;
+            flex-direction: column;
+            transition: width 0.25s ease;
+            overflow: hidden;
+        }
+
+        .editor-pane { width: 50%; border-right: 2px solid #e5e7eb; }
+        .preview-pane { width: 50%; }
+
+        .container.source-hidden .editor-pane {
+            width: 0;
+            border-right: none;
+            overflow: hidden;
+        }
+        .container.source-hidden .preview-pane { width: 100%; }
+
+        .pane-header {
+            background: #f3f4f6;
+            padding: 5px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #6b7280;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border-bottom: 1px solid #e5e7eb;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        textarea {
+            flex: 1;
+            padding: 16px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            border: none;
+            outline: none;
+            resize: none;
+            line-height: 1.5;
+        }
+
+        iframe {
+            flex: 1;
+            border: none;
+            background: white;
+        }
+
+        /* ── Cell count badge ──────────────────────────────── */
+        .cell-count {
+            background: #3b82f6;
+            color: white;
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 9px;
+            margin-left: 4px;
+            font-weight: 700;
+        }
+
+        /* ── Floating Toolbar (Medium-style) ───────────────── */
+        .floating-toolbar {
+            position: fixed;
+            background: #1e293b;
+            color: white;
+            border-radius: 8px;
+            padding: 6px 8px;
+            display: none;
+            gap: 4px;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 10000;
+            opacity: 0;
+            transform: translateY(4px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+        }
+
+        .floating-toolbar.show {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .floating-toolbar button {
+            background: transparent;
+            border: 1px solid transparent;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.15s ease;
+        }
+
+        .floating-toolbar button:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .floating-toolbar button.active {
+            background: rgba(59,130,246,0.3);
+            border-color: #3b82f6;
+        }
+
+        .floating-toolbar .sep {
+            width: 1px;
+            height: 20px;
+            background: rgba(255,255,255,0.2);
+            margin: 0 4px;
+        }
+
+        /* ── Full-screen mode ──────────────────────────────── */
+        body.fullscreen header,
+        body.fullscreen .toolbar,
+        body.fullscreen .format-toolbar,
+        body.fullscreen .table-toolbar {
+            display: none;
+        }
+
+        body.fullscreen .container {
+            height: 100vh;
+        }
+
+        body.fullscreen .editor-pane {
+            width: 0 !important;
+            display: none;
+        }
+
+        body.fullscreen .preview-pane {
+            width: 100% !important;
+        }
+
+        /* ── Stats Panel ───────────────────────────────────── */
+        .stats-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 9999;
+            min-width: 200px;
+            display: none;
+        }
+
+        .stats-panel.show {
+            display: block;
+        }
+
+        .stats-panel h3 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .stats-panel .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+
+        .stats-panel .stat-label {
+            color: #6b7280;
+        }
+
+        .stats-panel .stat-value {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .stats-panel .close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #9ca3af;
+            font-size: 18px;
+            line-height: 1;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+        }
+
+        .stats-panel .close-btn:hover {
+            color: #374151;
+        }
+
+        /* ── Responsive Preview Modes ──────────────────────── */
+        .preview-pane iframe {
+            transition: width 0.3s ease, margin 0.3s ease;
+        }
+
+        .preview-pane.tablet iframe {
+            width: 768px;
+            margin: 0 auto;
+            display: block;
+            box-shadow: 0 0 0 1px #e5e7eb;
+        }
+
+        .preview-pane.mobile iframe {
+            width: 375px;
+            margin: 0 auto;
+            display: block;
+            box-shadow: 0 0 0 1px #e5e7eb;
+        }
+
+        .toolbar button.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        /* ── Find & Replace Panel ──────────────────────────── */
+        .find-replace-panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            z-index: 9999;
+            min-width: 350px;
+            display: none;
+        }
+
+        .find-replace-panel.show {
+            display: block;
+        }
+
+        .find-replace-panel h3 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .find-replace-panel input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .find-replace-panel .search-info {
+            font-size: 12px;
+            color: #6b7280;
+            margin: 4px 0 8px 0;
+            min-height: 18px;
+        }
+
+        .find-replace-panel .button-group {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .find-replace-panel button {
+            flex: 1;
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.15s;
+        }
+
+        .find-replace-panel button:hover {
+            background: #f3f4f6;
+        }
+
+        .find-replace-panel button.primary-btn {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .find-replace-panel button.primary-btn:hover {
+            background: #2563eb;
+        }
+
+        .find-replace-panel .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #9ca3af;
+            font-size: 20px;
+            line-height: 1;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+        }
+
+        .find-replace-panel .close-btn:hover {
+            color: #374151;
+        }
+
+        .find-replace-panel label {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: #6b7280;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+
+        .find-replace-panel input[type="checkbox"] {
+            margin-right: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>HTML Live Editor</header>
+
+<!-- ── Floating Toolbar ────────────────────────────────────────────────── -->
+<div class="floating-toolbar" id="floatingToolbar">
+    <button title="Bold (Cmd/Ctrl+B)" onclick="cmd('bold'); updateFloatingToolbar()"><b>B</b></button>
+    <button title="Italic (Cmd/Ctrl+I)" onclick="cmd('italic'); updateFloatingToolbar()"><i>I</i></button>
+    <button title="Underline (Cmd/Ctrl+U)" onclick="cmd('underline'); updateFloatingToolbar()"><u>U</u></button>
+    <span class="sep"></span>
+    <button title="Highlight" onclick="promptHighlight(); updateFloatingToolbar()">🎨 Highlight</button>
+    <button title="Link (Cmd/Ctrl+K)" onclick="insertLink(); updateFloatingToolbar()">🔗 Link</button>
+</div>
+
+<!-- ── Stats Panel ─────────────────────────────────────────────────────── -->
+<div class="stats-panel" id="statsPanel">
+    <button class="close-btn" onclick="toggleStats()">×</button>
+    <h3>📊 Document Statistics</h3>
+    <div class="stat-row">
+        <span class="stat-label">Characters:</span>
+        <span class="stat-value" id="statChars">0</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">Characters (no spaces):</span>
+        <span class="stat-value" id="statCharsNoSpaces">0</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">Words:</span>
+        <span class="stat-value" id="statWords">0</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">Paragraphs:</span>
+        <span class="stat-value" id="statParagraphs">0</span>
+    </div>
+    <div class="stat-row">
+        <span class="stat-label">Reading time:</span>
+        <span class="stat-value" id="statReadingTime">0 min</span>
+    </div>
+</div>
+
+<!-- ── Find & Replace Panel ─────────────────────────────────────────────── -->
+<div class="find-replace-panel" id="findReplacePanel">
+    <button class="close-btn" onclick="closeFindReplace()">×</button>
+    <h3>🔍 Find & Replace</h3>
+
+    <input type="text" id="findInput" placeholder="Find..." onkeyup="handleFindInput(event)">
+    <div class="search-info" id="searchInfo"></div>
+
+    <input type="text" id="replaceInput" placeholder="Replace with...">
+
+    <label>
+        <input type="checkbox" id="caseSensitive">
+        Case sensitive
+    </label>
+
+    <div class="button-group">
+        <button onclick="findPrevious()">◀ Previous</button>
+        <button onclick="findNext()">Next ▶</button>
+    </div>
+
+    <div class="button-group">
+        <button onclick="replaceOne()">Replace</button>
+        <button class="primary-btn" onclick="replaceAll()">Replace All</button>
+    </div>
+</div>
+
+<div class="toolbar">
+    <button class="primary" onclick="copyCode()">Copy HTML</button>
+    <button class="secondary" onclick="exportHTML()">⬇ Export HTML</button>
+    <select onchange="loadTemplate(this.value)">
+        <option value="">Load Template</option>
+        <option value="basic">Basic Page</option>
+        <option value="card">Card Layout</option>
+        <option value="email">Simple Email</option>
+    </select>
+    <button class="secondary" id="btnToggleSource" onclick="toggleSource()" title="Toggle HTML source pane">&#9664; Hide Source</button>
+    <button class="secondary" onclick="toggleFullscreen()" title="Full-screen mode (Esc to exit)">⛶ Fullscreen</button>
+    <button class="secondary" onclick="toggleStats()" title="Show document statistics">📊 Stats</button>
+    <span style="color:#d1d5db;margin:0 8px">|</span>
+    <span style="font-size:11px;color:#6b7280;font-weight:600;margin-right:4px">PREVIEW:</span>
+    <button class="secondary" id="btnDesktop" onclick="setPreviewMode('desktop')" title="Desktop view">🖥️</button>
+    <button class="secondary" id="btnTablet" onclick="setPreviewMode('tablet')" title="Tablet view (768px)">📱</button>
+    <button class="secondary" id="btnMobile" onclick="setPreviewMode('mobile')" title="Mobile view (375px)">📱</button>
+</div>
+
+<!-- ── Format Toolbar ──────────────────────────────────────────────────── -->
+<div class="format-toolbar" id="formatToolbar">
+    <button title="Undo" onclick="cmd('undo')">&#8617;</button>
+    <button title="Redo" onclick="cmd('redo')">&#8618;</button>
+    <span class="sep"></span>
+
+    <select title="Paragraph Style" onchange="cmd('formatBlock', this.value); this.selectedIndex=0;">
+        <option value="">Style</option>
+        <option value="p">Paragraph</option>
+        <option value="h1">Heading 1</option>
+        <option value="h2">Heading 2</option>
+        <option value="h3">Heading 3</option>
+        <option value="h4">Heading 4</option>
+        <option value="blockquote">Blockquote</option>
+        <option value="pre">Code Block</option>
+    </select>
+
+    <select title="Font Family" onchange="cmd('fontName', this.value)">
+        <option value="Arial" selected>Arial</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Times New Roman">Times New Roman</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Helvetica">Helvetica</option>
+        <option value="Trebuchet MS">Trebuchet</option>
+    </select>
+
+    <select title="Font Size" onchange="cmd('fontSize', this.value)">
+        <option value="1">8pt</option>
+        <option value="2">10pt</option>
+        <option value="3" selected>12pt</option>
+        <option value="4">14pt</option>
+        <option value="5">18pt</option>
+        <option value="6">24pt</option>
+        <option value="7">36pt</option>
+    </select>
+
+    <span class="sep"></span>
+
+    <button id="btnBold"      title="Bold (Ctrl+B)"     onclick="cmd('bold')"><b>B</b></button>
+    <button id="btnItalic"    title="Italic (Ctrl+I)"   onclick="cmd('italic')"><i>I</i></button>
+    <button id="btnUnderline" title="Underline (Ctrl+U)" onclick="cmd('underline')"><u>U</u></button>
+    <button id="btnStrike"    title="Strikethrough"      onclick="cmd('strikeThrough')"><s>S</s></button>
+    <button id="btnSuper"     title="Superscript"        onclick="cmd('superscript')">x&#178;</button>
+    <button id="btnSub"       title="Subscript"          onclick="cmd('subscript')">x&#8322;</button>
+
+    <span class="sep"></span>
+
+    <label title="Text Color">
+        <span style="font-weight:bold;font-size:13px;border-bottom:3px solid #e74c3c;line-height:1.1">A</span>
+        <input type="color" id="textColor" value="#000000" oninput="cmd('foreColor', this.value)">
+    </label>
+    <label title="Highlight Color" style="margin-left:3px">
+        <span style="font-weight:bold;font-size:13px;background:#ffe066;padding:0 2px;line-height:1.1">A</span>
+        <input type="color" id="bgColor" value="#ffff00" oninput="cmd('hiliteColor', this.value)">
+    </label>
+
+    <span class="sep"></span>
+
+    <button title="Align Left"   onclick="cmd('justifyLeft')">&#8592; L</button>
+    <button title="Align Center" onclick="cmd('justifyCenter')">&#8596; C</button>
+    <button title="Align Right"  onclick="cmd('justifyRight')">R &#8594;</button>
+    <button title="Justify"      onclick="cmd('justifyFull')">&#8801; J</button>
+
+    <span class="sep"></span>
+
+    <button title="Bullet List"     onclick="cmd('insertUnorderedList')">&#8226; List</button>
+    <button title="Numbered List"   onclick="cmd('insertOrderedList')">1. List</button>
+    <button title="Decrease Indent" onclick="cmd('outdent')">&#8676;</button>
+    <button title="Increase Indent" onclick="cmd('indent')">&#8677;</button>
+
+    <span class="sep"></span>
+
+    <button title="Insert Link"     onclick="insertLink()">&#128279; Link</button>
+    <button title="Insert Image"    onclick="insertImage()">&#128247; Image</button>
+    <button title="Insert Media (YouTube/Vimeo)" onclick="insertMedia()">&#127916; Media</button>
+    <button title="Insert Table"    onclick="insertTablePrompt()">&#8862; Table</button>
+    <button title="Import Word Document (.docx)" onclick="importWordDocument()">&#128196; Word</button>
+    <button title="Horizontal Rule" onclick="cmd('insertHorizontalRule')">&#8212; HR</button>
+
+    <span class="sep"></span>
+
+    <button id="btnFmtPainter" title="Format Painter &#10;&#10;1. Select source text/cell&#10;2. Click this button&#10;3. Click or select target" onclick="toggleFormatPainter()" style="font-size:15px">&#128396;</button>
+    <button title="Remove Formatting" onclick="cmd('removeFormat')" style="color:#dc2626">&#10005; Fmt</button>
+</div>
+
+<!-- ── Table Toolbar (contextual) ──────────────────────────────────────── -->
+<div class="table-toolbar" id="tableToolbar" style="display:none">
+    <span class="tb-label">TABLE</span>
+    <span class="sep"></span>
+
+    <!-- Row operations -->
+    <span class="tb-label">Row:</span>
+    <button title="Add Row Above" onclick="addRow('above')">&#8593; Above</button>
+    <button title="Add Row Below"  onclick="addRow('below')">&#8595; Below</button>
+    <button title="Delete Row"     onclick="deleteRow()" style="color:#dc2626">&#10005;</button>
+    <span class="sep"></span>
+
+    <!-- Column operations -->
+    <span class="tb-label">Col:</span>
+    <button title="Add Column Left"  onclick="addCol('left')">&#8592; Left</button>
+    <button title="Add Column Right" onclick="addCol('right')">Right &#8594;</button>
+    <button title="Delete Column"    onclick="deleteCol()" style="color:#dc2626">&#10005;</button>
+    <span class="sep"></span>
+
+    <!-- Merge / Split -->
+    <button title="Merge Selected Cells" onclick="mergeCells()">&#10697; Merge</button>
+    <button title="Split Merged Cell"    onclick="splitCell()">&#10698; Split</button>
+    <span class="sep"></span>
+
+    <!-- Cell dimensions -->
+    <span class="tb-label">W:</span>
+    <input type="number" id="tblCellW" min="0" placeholder="auto" title="Cell Width (px)" onchange="setCellProp('width', this.value ? this.value+'px' : '')">
+    <span class="tb-label">H:</span>
+    <input type="number" id="tblCellH" min="0" placeholder="auto" title="Cell Height (px)" onchange="setCellProp('height', this.value ? this.value+'px' : '')">
+    <span class="tb-label">Pad:</span>
+    <input type="number" id="tblCellPad" min="0" placeholder="8" title="Cell Padding (px)" onchange="setCellProp('padding', this.value ? this.value+'px' : '')">
+    <span class="sep"></span>
+
+    <!-- Border controls -->
+    <span class="tb-label">Border:</span>
+    <input type="number" id="tblBorderW" value="1" min="0" max="10" style="width:36px" title="Border Width (px)">
+    <select id="tblBorderS" title="Border Style">
+        <option value="solid">Solid</option>
+        <option value="dashed">Dashed</option>
+        <option value="dotted">Dotted</option>
+        <option value="double">Double</option>
+        <option value="none">None</option>
+    </select>
+    <input type="color" id="tblBorderC" value="#000000" title="Border Color">
+    <button title="All Borders"    onclick="applyBorder('all')">All</button>
+    <button title="Top Border"     onclick="applyBorder('Top')">T</button>
+    <button title="Right Border"   onclick="applyBorder('Right')">R</button>
+    <button title="Bottom Border"  onclick="applyBorder('Bottom')">B</button>
+    <button title="Left Border"    onclick="applyBorder('Left')">L</button>
+    <button title="No Borders"     onclick="applyBorder('none')" style="color:#dc2626">&#10005;</button>
+    <span class="sep"></span>
+
+    <!-- Cell color -->
+    <span class="tb-label">Cell Color:</span>
+    <input type="color" id="tblCellColor" value="#ffffff" title="Cell Background Color" oninput="setCellColor(this.value)">
+    <button title="Remove Cell Color" onclick="setCellColor('')" style="color:#dc2626">&#10005;</button>
+    <span class="sep"></span>
+
+    <!-- Selection info -->
+    <span class="tb-label">Cells:</span>
+    <span class="tb-label" id="cellSelCount" style="color:#1d4ed8">0</span>
+    <button title="Select All Cells in Table" onclick="selectAllCells()">Select All</button>
+</div>
+
+<!-- ── Split View ──────────────────────────────────────────────────────── -->
+<div class="container" id="container">
+    <div class="pane editor-pane" id="editorPane">
+        <div class="pane-header">HTML Source</div>
+        <textarea id="editor" spellcheck="false"></textarea>
+    </div>
+    <div class="pane preview-pane">
+        <div class="pane-header">
+            <span>Live Preview &mdash; click to edit</span>
+        </div>
+        <iframe id="preview"></iframe>
+    </div>
+</div>
+
+<script>
+    // ══════════════════════════════════════════════════════════════════════════
+    //  MODULAR ARCHITECTURE - CORE CLASSES
+    // ══════════════════════════════════════════════════════════════════════════
+
+    // ── EventBus: Pub/Sub system for decoupled communication ─────────────────
+    class EventBus {
+        constructor() {
+            this.events = {};
+        }
+
+        on(event, callback) {
+            if (!this.events[event]) this.events[event] = [];
+            this.events[event].push(callback);
+            return () => this.off(event, callback); // Return unsubscribe function
+        }
+
+        off(event, callback) {
+            if (!this.events[event]) return;
+            this.events[event] = this.events[event].filter(cb => cb !== callback);
+        }
+
+        emit(event, data) {
+            if (!this.events[event]) return;
+            this.events[event].forEach(callback => {
+                try {
+                    callback(data);
+                } catch (e) {
+                    console.error(`Error in event handler for "${event}":`, e);
+                }
+            });
+        }
+
+        clear() {
+            this.events = {};
+        }
+    }
+
+    // ── SelectionManager: Manage selection state ──────────────────────────────
+    class SelectionManager {
+        constructor(previewWindow) {
+            this.previewWindow = previewWindow;
+            this.savedRange = null;
+        }
+
+        save() {
+            try {
+                const sel = this.previewWindow.getSelection();
+                if (sel && sel.rangeCount > 0) {
+                    this.savedRange = sel.getRangeAt(0).cloneRange();
+                    return this.savedRange;
+                }
+            } catch (e) {
+                console.error('Error saving selection:', e);
+            }
+            return null;
+        }
+
+        restore() {
+            if (!this.savedRange) return false;
+            try {
+                const sel = this.previewWindow.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(this.savedRange);
+                return true;
+            } catch (e) {
+                console.error('Error restoring selection:', e);
+                return false;
+            }
+        }
+
+        getSelection() {
+            try {
+                return this.previewWindow.getSelection();
+            } catch (e) {
+                return null;
+            }
+        }
+
+        getSelectedText() {
+            const sel = this.getSelection();
+            return sel ? sel.toString() : '';
+        }
+
+        getSelectedElement() {
+            const sel = this.getSelection();
+            if (!sel || sel.rangeCount === 0) return null;
+            let node = sel.anchorNode;
+            if (node && node.nodeType === 3) node = node.parentElement;
+            return node;
+        }
+
+        selectNode(node) {
+            try {
+                const sel = this.previewWindow.getSelection();
+                const range = this.previewWindow.document.createRange();
+                range.selectNodeContents(node);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                this.save();
+                return true;
+            } catch (e) {
+                console.error('Error selecting node:', e);
+                return false;
+            }
+        }
+
+        clear() {
+            this.savedRange = null;
+            try {
+                const sel = this.previewWindow.getSelection();
+                sel.removeAllRanges();
+            } catch (e) {}
+        }
+    }
+
+    // ── Command: Base class for all editing operations ───────────────────────
+    class Command {
+        constructor(editor) {
+            this.editor = editor;
+            this.executed = false;
+        }
+
+        execute() {
+            throw new Error('Command.execute() must be implemented');
+        }
+
+        undo() {
+            throw new Error('Command.undo() must be implemented');
+        }
+
+        redo() {
+            this.execute();
+        }
+    }
+
+    // ── History: Undo/Redo manager with 100+ levels ──────────────────────────
+    class History {
+        constructor(maxSize = 100) {
+            this.maxSize = maxSize;
+            this.undoStack = [];
+            this.redoStack = [];
+            this.groupDelay = 500; // ms to group rapid edits
+            this.lastTimestamp = 0;
+            this.grouping = false;
+        }
+
+        push(command) {
+            // Group rapid typing into single undo step
+            const now = Date.now();
+            if (this.grouping && now - this.lastTimestamp < this.groupDelay) {
+                // Replace last command if groupable
+                if (this.undoStack.length > 0 && this.undoStack[this.undoStack.length - 1].groupable && command.groupable) {
+                    this.undoStack[this.undoStack.length - 1] = command;
+                    this.lastTimestamp = now;
+                    return;
+                }
+            }
+
+            this.undoStack.push(command);
+            this.redoStack = []; // Clear redo on new action
+            this.lastTimestamp = now;
+
+            // Trim if exceeds max size
+            if (this.undoStack.length > this.maxSize) {
+                this.undoStack.shift();
+            }
+        }
+
+        undo() {
+            if (this.undoStack.length === 0) return false;
+            const command = this.undoStack.pop();
+            try {
+                command.undo();
+                this.redoStack.push(command);
+                return true;
+            } catch (e) {
+                console.error('Error undoing command:', e);
+                return false;
+            }
+        }
+
+        redo() {
+            if (this.redoStack.length === 0) return false;
+            const command = this.redoStack.pop();
+            try {
+                command.redo();
+                this.undoStack.push(command);
+                return true;
+            } catch (e) {
+                console.error('Error redoing command:', e);
+                return false;
+            }
+        }
+
+        clear() {
+            this.undoStack = [];
+            this.redoStack = [];
+        }
+
+        canUndo() {
+            return this.undoStack.length > 0;
+        }
+
+        canRedo() {
+            return this.redoStack.length > 0;
+        }
+
+        get undoCount() {
+            return this.undoStack.length;
+        }
+
+        get redoCount() {
+            return this.redoStack.length;
+        }
+
+        enableGrouping() {
+            this.grouping = true;
+        }
+
+        disableGrouping() {
+            this.grouping = false;
+        }
+    }
+
+    // ── EditorCore: Central coordinator ───────────────────────────────────────
+    class EditorCore {
+        constructor(previewWindow) {
+            this.previewWindow = previewWindow;
+            this.events = new EventBus();
+            this.selection = new SelectionManager(previewWindow);
+            this.history = new History(100);
+            this.state = {
+                ready: false,
+                fullscreen: false,
+                theme: 'light',
+                activeFormats: new Set()
+            };
+        }
+
+        init() {
+            this.state.ready = true;
+            this.events.emit('editor:ready', this);
+        }
+
+        executeCommand(command) {
+            this.selection.save();
+            this.selection.restore();
+            command.execute();
+            this.history.push(command);
+            this.events.emit('content:change', this);
+            return command;
+        }
+
+        undo() {
+            if (this.history.undo()) {
+                this.events.emit('content:change', this);
+                this.events.emit('history:undo', this);
+                return true;
+            }
+            return false;
+        }
+
+        redo() {
+            if (this.history.redo()) {
+                this.events.emit('content:change', this);
+                this.events.emit('history:redo', this);
+                return true;
+            }
+            return false;
+        }
+
+        updateState(updates) {
+            Object.assign(this.state, updates);
+            this.events.emit('state:change', this.state);
+        }
+
+        destroy() {
+            this.events.clear();
+            this.selection.clear();
+            this.history.clear();
+        }
+    }
+
+    // ── Specific Command Implementations ──────────────────────────────────────
+
+    class ExecCommand extends Command {
+        constructor(editor, commandName, value = null) {
+            super(editor);
+            this.commandName = commandName;
+            this.value = value;
+            this.groupable = ['insertText', 'delete', 'deleteContentBackward'].includes(commandName);
+        }
+
+        execute() {
+            const doc = this.editor.previewWindow.document;
+            doc.execCommand(this.commandName, false, this.value);
+            this.executed = true;
+        }
+
+        undo() {
+            const doc = this.editor.previewWindow.document;
+            doc.execCommand('undo');
+        }
+    }
+
+    // ── Utility: Debounce function ────────────────────────────────────────────
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // ── Utility: Throttle function ────────────────────────────────────────────
+    function throttle(func, limit) {
+        let inThrottle;
+        return function(...args) {
+            if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    //  LEGACY CODE & INITIALIZATION
+    // ══════════════════════════════════════════════════════════════════════════
+
+    const editor    = document.getElementById('editor');
+    const preview   = document.getElementById('preview');
+    const container = document.getElementById('container');
+
+    // Initialize EditorCore when preview is ready
+    let editorCore = null;
+
+    let isFromPreview  = false;
+    let previewReady   = false;
+    let savedRange     = null;
+    let sourceHidden   = false;
+
+    // ── Selection save / restore ─────────────────────────────────────────
+
+    function saveSelection() {
+        try {
+            const sel = preview.contentWindow.getSelection();
+            if (sel && sel.rangeCount > 0) {
+                savedRange = sel.getRangeAt(0).cloneRange();
+            }
+        } catch (e) {}
+    }
+
+    function restoreSelection() {
+        if (!savedRange) return;
+        try {
+            const sel = preview.contentWindow.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(savedRange);
+        } catch (e) {}
+    }
+
+    // ── Toolbar mousedown: save selection & prevent focus steal ───────────
+
+    ['formatToolbar', 'tableToolbar'].forEach(id => {
+        document.getElementById(id).addEventListener('mousedown', function (e) {
+            saveSelection();
+            if (e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // ── Editor artefact injection / cleanup ──────────────────────────────
+    //    We inject a <style> and CSS classes into the iframe for cell
+    //    selection highlights & format-painter cursor. These must be
+    //    stripped before syncing the iframe HTML back to the textarea.
+
+    const ED_STYLE_ID = '__ed';
+
+    function injectEditorStyles() {
+        const doc = preview.contentDocument;
+        if (!doc) return;
+        let s = doc.getElementById(ED_STYLE_ID);
+        if (!s) {
+            s = doc.createElement('style');
+            s.id = ED_STYLE_ID;
+            (doc.head || doc.documentElement).appendChild(s);
+        }
+        s.textContent = `
+            .__csel {
+                outline: 2px solid #3b82f6 !important;
+                box-shadow: inset 0 0 0 999px rgba(59,130,246,0.08) !important;
+            }
+            .__fmtptr, .__fmtptr * {
+                cursor: copy !important;
+            }
+        `;
+    }
+
+    function cleanForSync() {
+        const doc = preview.contentDocument;
+        const s = doc.getElementById(ED_STYLE_ID);
+        if (s) s.remove();
+        doc.querySelectorAll('.__csel').forEach(el => el.classList.remove('__csel'));
+        if (doc.body) doc.body.classList.remove('__fmtptr');
+    }
+
+    function restoreAfterSync() {
+        injectEditorStyles();
+        selectedCells.forEach(c => { if (c.isConnected) c.classList.add('__csel'); });
+        if (formatPainterActive && preview.contentDocument.body) {
+            preview.contentDocument.body.classList.add('__fmtptr');
+        }
+    }
+
+    // ── Preview rendering ────────────────────────────────────────────────
+
+    function updatePreview() {
+        if (isFromPreview) return;
+        clearCellSelection();
+        const doc = preview.contentDocument;
+        doc.open();
+        doc.write(editor.value);
+        doc.close();
+        doc.designMode = 'on';
+        attachPreviewListeners();
+        injectEditorStyles();
+        previewReady = true;
+
+        // Initialize EditorCore if not already done
+        if (!editorCore) {
+            editorCore = new EditorCore(preview.contentWindow);
+            editorCore.init();
+
+            // Set up event listeners
+            editorCore.events.on('content:change', debounce(() => {
+                localStorage.setItem('savedCode', editor.value);
+            }, 1000));
+        }
+
+        localStorage.setItem('savedCode', editor.value);
+    }
+
+    function attachPreviewListeners() {
+        const doc = preview.contentDocument;
+        doc.removeEventListener('input',           onPreviewEdit);
+        doc.addEventListener   ('input',           onPreviewEdit);
+        doc.removeEventListener('selectionchange', onSelectionChange);
+        doc.addEventListener   ('selectionchange', onSelectionChange);
+        doc.removeEventListener('click',           onPreviewClick);
+        doc.addEventListener   ('click',           onPreviewClick);
+        doc.removeEventListener('mouseup',         onPreviewMouseUp);
+        doc.addEventListener   ('mouseup',         onPreviewMouseUp);
+
+        // Set up image handling
+        setupImageDragDrop();
+        setupImagePaste();
+        attachImageHandlers();
+
+        // Set up keyboard shortcuts
+        setupKeyboardShortcuts();
+
+        // Deselect image when clicking outside
+        doc.addEventListener('click', (e) => {
+            if (!e.target.closest('img') && !e.target.closest('#__image-toolbar')) {
+                deselectImage();
+            }
+        });
+    }
+
+    // ── Preview → Editor sync ────────────────────────────────────────────
+
+    function onPreviewEdit() {
+        isFromPreview = true;
+        cleanForSync();
+
+        const doc = preview.contentDocument;
+        let html = doc.documentElement.outerHTML;
+        if (editor.value.trimStart().toLowerCase().startsWith('<!doctype')) {
+            html = '<!DOCTYPE html>\n' + html;
+        }
+        editor.value = html;
+        localStorage.setItem('savedCode', html);
+
+        restoreAfterSync();
+        isFromPreview = false;
+    }
+
+    editor.addEventListener('input', updatePreview);
+
+    // ── execCommand wrapper ──────────────────────────────────────────────
+
+    function cmd(command, value) {
+        if (!previewReady || !editorCore) return;
+
+        // Use new command system for better history management
+        if (command === 'undo' && editorCore) {
+            editorCore.undo();
+            onPreviewEdit();
+            updateToolbarState();
+            return;
+        }
+        if (command === 'redo' && editorCore) {
+            editorCore.redo();
+            onPreviewEdit();
+            updateToolbarState();
+            return;
+        }
+
+        restoreSelection();
+        const execCmd = new ExecCommand(editorCore, command, value);
+        editorCore.executeCommand(execCmd);
+        onPreviewEdit();
+        updateToolbarState();
+    }
+
+    // ── Toolbar active states ────────────────────────────────────────────
+
+    function updateToolbarState() {
+        const doc = preview.contentDocument;
+        if (!doc) return;
+        try {
+            document.getElementById('btnBold').classList.toggle('active',      doc.queryCommandState('bold'));
+            document.getElementById('btnItalic').classList.toggle('active',    doc.queryCommandState('italic'));
+            document.getElementById('btnUnderline').classList.toggle('active', doc.queryCommandState('underline'));
+            document.getElementById('btnStrike').classList.toggle('active',    doc.queryCommandState('strikeThrough'));
+            document.getElementById('btnSuper').classList.toggle('active',     doc.queryCommandState('superscript'));
+            document.getElementById('btnSub').classList.toggle('active',       doc.queryCommandState('subscript'));
+        } catch (e) {}
+    }
+
+    function onSelectionChange() {
+        updateToolbarState();
+        detectTableContext();
+        handleSelectionForFloatingToolbar();
+    }
+
+    // ── Insert helpers ───────────────────────────────────────────────────
+
+    function insertLink() {
+        const url = prompt('Enter URL:', 'https://');
+        if (!url) return;
+        const text = prompt('Link text (leave blank to wrap selected text):');
+        if (text) {
+            cmd('insertHTML', `<a href="${url}">${text}</a>`);
+        } else {
+            cmd('createLink', url);
+        }
+    }
+
+    function insertTablePrompt() {
+        const rows = parseInt(prompt('Number of rows:', '3'));
+        const cols = parseInt(prompt('Number of columns:', '3'));
+        if (!rows || !cols || isNaN(rows) || isNaN(cols) || rows < 1 || cols < 1) return;
+
+        let html = '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;margin:8px 0">';
+        html += '<thead><tr>';
+        for (let c = 0; c < cols; c++) {
+            html += `<th style="background:#f3f4f6;padding:8px 10px;border:1px solid #d1d5db;text-align:left">Header ${c + 1}</th>`;
+        }
+        html += '</tr></thead><tbody>';
+        for (let r = 0; r < rows - 1; r++) {
+            html += '<tr>';
+            for (let c = 0; c < cols; c++) {
+                html += `<td style="padding:8px 10px;border:1px solid #d1d5db">Cell</td>`;
+            }
+            html += '</tr>';
+        }
+        html += '</tbody></table>';
+        cmd('insertHTML', html);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  IMAGE & MEDIA MANAGEMENT
+    // ══════════════════════════════════════════════════════════════════════
+
+    // ── Image insertion via file picker ───────────────────────────────────
+    function insertImage() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/png, image/jpeg, image/jpg, image/gif, image/webp, image/svg+xml';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 1024 * 1024) { // 1MB
+                    if (!confirm(`This image is ${(file.size / 1024 / 1024).toFixed(2)}MB. Large images will increase file size. Continue?`)) {
+                        return;
+                    }
+                }
+                handleImageFile(file);
+            }
+        };
+        input.click();
+    }
+
+    // ── Convert image file to base64 and insert ───────────────────────────
+    function handleImageFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64 = e.target.result;
+            insertImageAtCursor(base64, file.name);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // ── Insert image HTML at cursor position ──────────────────────────────
+    function insertImageAtCursor(src, alt = 'Image') {
+        const img = `<img src="${src}" alt="${alt}" style="max-width:100%; height:auto; display:block; margin:8px 0; border-radius:4px;" />`;
+        cmd('insertHTML', img);
+
+        // Add image selection handlers after insertion
+        setTimeout(() => {
+            attachImageHandlers();
+        }, 100);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  WORD DOCUMENT IMPORT
+    // ══════════════════════════════════════════════════════════════════════
+
+    // ── Import Word document via file picker ──────────────────────────────
+    function importWordDocument() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) { // 5MB
+                    if (!confirm(`This document is ${(file.size / 1024 / 1024).toFixed(2)}MB. Large files may take time to process. Continue?`)) {
+                        return;
+                    }
+                }
+                handleWordFile(file);
+            }
+        };
+        input.click();
+    }
+
+    // ── Convert DOCX to HTML using mammoth.js ─────────────────────────────
+    async function handleWordFile(file) {
+        try {
+            const loadingMsg = showLoadingMessage('Converting Word document...');
+
+            const arrayBuffer = await readFileAsArrayBuffer(file);
+
+            const result = await mammoth.convertToHtml(
+                { arrayBuffer: arrayBuffer },
+                {
+                    convertImage: mammoth.images.imgElement(function(image) {
+                        return image.read("base64").then(function(imageBuffer) {
+                            return {
+                                src: "data:" + image.contentType + ";base64," + imageBuffer,
+                                // Natural size - no forced responsive scaling for Word imports
+                                style: "display: block; margin: 8px 0; border-radius: 4px;"
+                            };
+                        });
+                    }),
+
+                    // Enhanced styleMap - catch all heading variations
+                    styleMap: [
+                        // Standard & lowercase heading styles
+                        "p[style-name='Heading 1'] => h1:fresh",
+                        "p[style-name='Heading 2'] => h2:fresh",
+                        "p[style-name='Heading 3'] => h3:fresh",
+                        "p[style-name='Heading 4'] => h4:fresh",
+                        "p[style-name='Heading 5'] => h5:fresh",
+                        "p[style-name='Heading 6'] => h6:fresh",
+                        "p[style-name='heading 1'] => h1:fresh",
+                        "p[style-name='heading 2'] => h2:fresh",
+                        "p[style-name='heading 3'] => h3:fresh",
+                        "p[style-name='heading 4'] => h4:fresh",
+                        "p[style-name='heading 5'] => h5:fresh",
+                        "p[style-name='heading 6'] => h6:fresh",
+                        "p[style-name='Title'] => h1:fresh",
+                        "p[style-name='Subtitle'] => h2:fresh",
+
+                        // Text box style mappings
+                        "p[style-name='Text Box'] => p.textbox:fresh",
+                        "p[style-name='Text Box Paragraph'] => p.textbox:fresh",
+
+                        // Character styles
+                        "r[style-name='Strong'] => strong",
+                        "r[style-name='Emphasis'] => em",
+
+                        // Quotes and code
+                        "p[style-name='Quote'] => blockquote:fresh",
+                        "p[style-name='Intense Quote'] => blockquote:fresh",
+                        "p[style-name='HTML Preformatted'] => pre:fresh",
+                        "r[style-name='HTML Code'] => code"
+                    ],
+
+                    ignoreEmptyParagraphs: false,
+                    includeDefaultStyleMap: true,
+                    includeEmbeddedStyleMap: true
+                }
+            );
+
+            hideLoadingMessage(loadingMsg);
+
+            if (result.messages && result.messages.length > 0) {
+                console.warn('DOCX conversion warnings:', result.messages);
+            }
+
+            if (result.value && result.value.trim()) {
+                const enhancedHTML = enhanceWordHTML(result.value);
+                insertWordContentAtCursor(enhancedHTML, file.name);
+            } else {
+                alert('The document appears to be empty or could not be converted.');
+            }
+
+        } catch (error) {
+            console.error('Error converting Word document:', error);
+            alert(`Failed to convert document: ${error.message}`);
+        }
+    }
+
+    // ── Post-process mammoth HTML to add inline styles ────────────────────────
+    function enhanceWordHTML(html) {
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+
+        // 1. HEADINGS: Add explicit sizes
+        const headingSizes = {
+            'H1': '2em', 'H2': '1.5em', 'H3': '1.17em',
+            'H4': '1em', 'H5': '0.83em', 'H6': '0.67em'
+        };
+
+        Object.keys(headingSizes).forEach(tag => {
+            temp.querySelectorAll(tag).forEach(heading => {
+                let style = heading.getAttribute('style') || '';
+
+                // Parse existing styles - DON'T overwrite Word's formatting
+                const hasExistingFontSize = /font-size\s*:/i.test(style);
+                const hasExistingFontFamily = /font-family\s*:/i.test(style);
+                const hasExistingFontWeight = /font-weight\s*:/i.test(style);
+                const hasExistingMargin = /margin\s*:/i.test(style);
+
+                // Build additions conditionally
+                let additions = '';
+
+                // Only add if Word didn't provide
+                if (!hasExistingFontSize) {
+                    additions += `; font-size: ${headingSizes[tag]}`;
+                }
+                if (!hasExistingFontWeight) {
+                    additions += `; font-weight: bold`;
+                }
+                if (!hasExistingMargin) {
+                    additions += `; margin: 0.67em 0`;
+                }
+
+                // Preserve font-family from Word - NEVER override
+
+                heading.setAttribute('style', style + additions);
+            });
+        });
+
+        // 2. TABLES: Robust styling
+        temp.querySelectorAll('table').forEach(table => {
+            table.setAttribute('style',
+                'border-collapse: collapse; width: 100%; margin: 16px 0; border: 1px solid #d1d5db;'
+            );
+
+            table.querySelectorAll('td, th').forEach(cell => {
+                const style = cell.getAttribute('style') || '';
+                cell.setAttribute('style',
+                    `${style}; padding: 8px 12px; border: 1px solid #d1d5db; vertical-align: top;`
+                );
+            });
+
+            table.querySelectorAll('th').forEach(th => {
+                const style = th.getAttribute('style') || '';
+                th.setAttribute('style',
+                    `${style}; background: #f3f4f6; font-weight: bold;`
+                );
+            });
+        });
+
+        // 3. PARAGRAPHS: Alignment & spacing
+        temp.querySelectorAll('p').forEach(p => {
+            let style = p.getAttribute('style') || '';
+
+            // Preserve text-align from mammoth
+            if (!style.includes('text-align')) {
+                // Check classes for alignment hints
+                if (p.className.includes('center')) {
+                    style += '; text-align: center;';
+                } else if (p.className.includes('right')) {
+                    style += '; text-align: right;';
+                } else if (p.className.includes('justify')) {
+                    style += '; text-align: justify;';
+                }
+            }
+
+            if (!style.includes('margin')) {
+                style += '; margin: 0.5em 0;';
+            }
+
+            p.setAttribute('style', style);
+        });
+
+        // 4. LISTS: Proper spacing
+        temp.querySelectorAll('ul, ol').forEach(list => {
+            list.setAttribute('style', 'margin: 0.5em 0; padding-left: 2em;');
+        });
+
+        temp.querySelectorAll('li').forEach(li => {
+            li.setAttribute('style', 'margin: 0.25em 0;');
+        });
+
+        // 5. TEXT FORMATTING: Ensure inline styles
+        temp.querySelectorAll('strong, b').forEach(el => {
+            const style = el.getAttribute('style') || '';
+            if (!style.includes('font-weight')) {
+                el.setAttribute('style', `${style}; font-weight: bold;`);
+            }
+        });
+
+        temp.querySelectorAll('em, i').forEach(el => {
+            const style = el.getAttribute('style') || '';
+            if (!style.includes('font-style')) {
+                el.setAttribute('style', `${style}; font-style: italic;`);
+            }
+        });
+
+        temp.querySelectorAll('u').forEach(el => {
+            const style = el.getAttribute('style') || '';
+            if (!style.includes('text-decoration')) {
+                el.setAttribute('style', `${style}; text-decoration: underline;`);
+            }
+        });
+
+        // 6. TEXT BOXES: Visual distinction
+        temp.querySelectorAll('p.textbox, .textbox').forEach(textbox => {
+            let style = textbox.getAttribute('style') || '';
+
+            // Visual styling to distinguish text boxes
+            const textboxStyles = 'border: 1px solid #d1d5db; ' +
+                                 'background: #f9fafb; ' +
+                                 'padding: 12px; ' +
+                                 'margin: 12px 0; ' +
+                                 'border-radius: 4px;';
+
+            textbox.setAttribute('style', style + '; ' + textboxStyles);
+        });
+
+        // 7. IMAGES: Preserve dimensions from Word
+        temp.querySelectorAll('img').forEach(img => {
+            let style = img.getAttribute('style') || '';
+
+            // Only add fallback if no size constraints exist
+            if (!style.includes('width') && !style.includes('max-width')) {
+                // Reasonable max to prevent page breaks
+                style += '; max-width: 100%; height: auto;';
+            }
+
+            // Consistent display and spacing
+            if (!style.includes('display')) {
+                style += '; display: block;';
+            }
+            if (!style.includes('margin')) {
+                style += '; margin: 8px 0;';
+            }
+
+            img.setAttribute('style', style);
+        });
+
+        return temp.innerHTML;
+    }
+
+    // ── Read file as ArrayBuffer (required by mammoth) ────────────────────
+    function readFileAsArrayBuffer(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(new Error('Failed to read file'));
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    // ── Insert converted HTML using direct DOM manipulation ────────────────────
+    function insertWordContentAtCursor(html, fileName) {
+        try {
+            const doc = preview.contentDocument;
+            const sel = doc.getSelection();
+
+            if (!sel || sel.rangeCount === 0) {
+                // No selection - append to end
+                const wrapper = doc.createElement('div');
+                wrapper.className = 'word-import';
+                wrapper.setAttribute('data-source', fileName);
+                wrapper.setAttribute('style', 'margin: 16px 0;');
+                wrapper.innerHTML = html;
+                doc.body.appendChild(wrapper);
+                wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                // Insert at cursor
+                const range = sel.getRangeAt(0);
+                range.deleteContents();
+
+                const wrapper = doc.createElement('div');
+                wrapper.className = 'word-import';
+                wrapper.setAttribute('data-source', fileName);
+                wrapper.setAttribute('style', 'margin: 16px 0;');
+                wrapper.innerHTML = html;
+
+                range.insertNode(wrapper);
+                range.setStartAfter(wrapper);
+                range.setEndAfter(wrapper);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+
+            // Sync to source editor
+            setTimeout(() => {
+                onPreviewEdit();
+                attachImageHandlers();
+            }, 100);
+
+        } catch (error) {
+            console.error('Error inserting Word content:', error);
+            // Fallback to old method
+            const wrappedHtml = `
+                <div class="word-import" data-source="${fileName}" style="margin: 16px 0;">
+                    ${html}
+                </div>
+            `;
+            cmd('insertHTML', wrappedHtml);
+            setTimeout(() => {
+                updatePreview();
+                attachImageHandlers();
+            }, 100);
+        }
+    }
+
+    // ── Show loading indicator ────────────────────────────────────────────
+    function showLoadingMessage(message) {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'wordLoadingIndicator';
+        loadingDiv.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            font-size: 16px;
+            z-index: 10000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        `;
+        loadingDiv.textContent = message;
+        document.body.appendChild(loadingDiv);
+        return loadingDiv;
+    }
+
+    // ── Hide loading indicator ────────────────────────────────────────────
+    function hideLoadingMessage(loadingDiv) {
+        if (loadingDiv && loadingDiv.parentNode) {
+            loadingDiv.parentNode.removeChild(loadingDiv);
+        }
+    }
+
+    // ── Attach event handlers to images in preview ────────────────────────
+    function attachImageHandlers() {
+        const doc = preview.contentDocument;
+        if (!doc) return;
+
+        const images = doc.querySelectorAll('img');
+        images.forEach(img => {
+            // Remove existing handlers
+            img.removeEventListener('click', onImageClick);
+            img.removeEventListener('mousedown', onImageMouseDown);
+
+            // Add new handlers
+            img.addEventListener('click', onImageClick);
+            img.style.cursor = 'pointer';
+
+            // Add resize capability
+            img.setAttribute('draggable', 'false');
+        });
+    }
+
+    // ── Handle image click ────────────────────────────────────────────────
+    let selectedImage = null;
+
+    function onImageClick(e) {
+        e.stopPropagation();
+        selectImage(e.target);
+    }
+
+    function selectImage(img) {
+        // Deselect previous image
+        if (selectedImage && selectedImage !== img) {
+            selectedImage.style.outline = '';
+            removeResizeHandles();
+        }
+
+        selectedImage = img;
+        selectedImage.style.outline = '2px solid #3b82f6';
+        selectedImage.style.outlineOffset = '2px';
+
+        // Show image toolbar (will be implemented next)
+        showImageToolbar(img);
+
+        // Add resize handles
+        addResizeHandles(img);
+    }
+
+    function deselectImage() {
+        if (selectedImage) {
+            selectedImage.style.outline = '';
+            removeResizeHandles();
+            selectedImage = null;
+            hideImageToolbar();
+        }
+    }
+
+    // ── Image resize handles ──────────────────────────────────────────────
+    let resizeHandles = null;
+
+    function addResizeHandles(img) {
+        removeResizeHandles();
+
+        const doc = preview.contentDocument;
+        const wrapper = doc.createElement('div');
+        wrapper.id = '__resize-wrapper';
+        wrapper.style.cssText = 'position:relative; display:inline-block; line-height:0;';
+
+        // Wrap the image
+        img.parentNode.insertBefore(wrapper, img);
+        wrapper.appendChild(img);
+
+        // Create handles
+        const positions = ['nw', 'ne', 'sw', 'se'];
+        positions.forEach(pos => {
+            const handle = doc.createElement('div');
+            handle.className = '__resize-handle';
+            handle.dataset.position = pos;
+            handle.style.cssText = `
+                position:absolute;
+                width:10px;
+                height:10px;
+                background:#3b82f6;
+                border:2px solid white;
+                border-radius:50%;
+                cursor:${pos === 'nw' || pos === 'se' ? 'nwse-resize' : 'nesw-resize'};
+                z-index:1000;
+            `;
+
+            // Position handles
+            if (pos.includes('n')) handle.style.top = '-5px';
+            if (pos.includes('s')) handle.style.bottom = '-5px';
+            if (pos.includes('w')) handle.style.left = '-5px';
+            if (pos.includes('e')) handle.style.right = '-5px';
+
+            handle.addEventListener('mousedown', (e) => startResize(e, img, pos));
+            wrapper.appendChild(handle);
+        });
+
+        resizeHandles = wrapper;
+    }
+
+    function removeResizeHandles() {
+        if (resizeHandles && resizeHandles.parentNode) {
+            const img = resizeHandles.querySelector('img');
+            if (img) {
+                resizeHandles.parentNode.insertBefore(img, resizeHandles);
+            }
+            resizeHandles.remove();
+            resizeHandles = null;
+        }
+    }
+
+    // ── Image resize logic ────────────────────────────────────────────────
+    let resizing = false;
+    let startX, startY, startWidth, startHeight, aspectRatio;
+
+    function startResize(e, img, position) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        resizing = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startWidth = img.offsetWidth;
+        startHeight = img.offsetHeight;
+        aspectRatio = startWidth / startHeight;
+
+        const doc = preview.contentDocument;
+        const onMouseMove = (e) => doResize(e, img, position);
+        const onMouseUp = () => {
+            resizing = false;
+            doc.removeEventListener('mousemove', onMouseMove);
+            doc.removeEventListener('mouseup', onMouseUp);
+            onPreviewEdit(); // Sync changes
+        };
+
+        doc.addEventListener('mousemove', onMouseMove);
+        doc.addEventListener('mouseup', onMouseUp);
+    }
+
+    function doResize(e, img, position) {
+        if (!resizing) return;
+
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+
+        let newWidth = startWidth;
+        let newHeight = startHeight;
+
+        // Calculate new dimensions based on handle position
+        if (position.includes('e')) newWidth = startWidth + deltaX;
+        if (position.includes('w')) newWidth = startWidth - deltaX;
+        if (position.includes('s')) newHeight = startHeight + deltaY;
+        if (position.includes('n')) newHeight = startHeight - deltaY;
+
+        // Maintain aspect ratio
+        if (position === 'nw' || position === 'ne' || position === 'sw' || position === 'se') {
+            newHeight = newWidth / aspectRatio;
+        }
+
+        // Apply minimum size
+        if (newWidth < 50) newWidth = 50;
+        if (newHeight < 50) newHeight = 50;
+
+        img.style.width = newWidth + 'px';
+        img.style.height = 'auto';
+    }
+
+    // ── Image toolbar (floating) ──────────────────────────────────────────
+    let imageToolbar = null;
+
+    function showImageToolbar(img) {
+        hideImageToolbar();
+
+        const doc = preview.contentDocument;
+        imageToolbar = doc.createElement('div');
+        imageToolbar.id = '__image-toolbar';
+        imageToolbar.style.cssText = `
+            position:absolute;
+            background:white;
+            border:1px solid #d1d5db;
+            border-radius:6px;
+            padding:4px;
+            display:flex;
+            gap:4px;
+            box-shadow:0 4px 6px rgba(0,0,0,0.1);
+            z-index:1000;
+        `;
+
+        // Position toolbar above image
+        const rect = img.getBoundingClientRect();
+        imageToolbar.style.left = rect.left + 'px';
+        imageToolbar.style.top = (rect.top - 40) + 'px';
+
+        // Add buttons
+        const buttons = [
+            { text: '🔗 Link', title: 'Wrap with link', action: () => wrapImageWithLink(img) },
+            { text: '⚙️ Properties', title: 'Edit properties', action: () => editImageProperties(img) },
+            { text: '🗑️ Delete', title: 'Delete image', action: () => deleteImage(img) }
+        ];
+
+        buttons.forEach(btn => {
+            const button = doc.createElement('button');
+            button.textContent = btn.text;
+            button.title = btn.title;
+            button.style.cssText = `
+                padding:4px 8px;
+                border:1px solid #d1d5db;
+                border-radius:4px;
+                background:white;
+                cursor:pointer;
+                font-size:12px;
+            `;
+            button.onmouseover = () => button.style.background = '#f3f4f6';
+            button.onmouseout = () => button.style.background = 'white';
+            button.onclick = (e) => {
+                e.preventDefault();
+                btn.action();
+            };
+            imageToolbar.appendChild(button);
+        });
+
+        doc.body.appendChild(imageToolbar);
+    }
+
+    function hideImageToolbar() {
+        if (imageToolbar && imageToolbar.parentNode) {
+            imageToolbar.remove();
+            imageToolbar = null;
+        }
+    }
+
+    function wrapImageWithLink(img) {
+        const url = prompt('Enter link URL:', 'https://');
+        if (url) {
+            const a = preview.contentDocument.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            img.parentNode.insertBefore(a, img);
+            a.appendChild(img);
+            onPreviewEdit();
+            deselectImage();
+        }
+    }
+
+    function editImageProperties(img) {
+        const alt = prompt('Alt text:', img.alt || '');
+        if (alt !== null) img.alt = alt;
+
+        const width = prompt('Width (px, leave blank for auto):', parseInt(img.style.width) || '');
+        if (width) img.style.width = width + 'px';
+        else img.style.width = '';
+
+        onPreviewEdit();
+    }
+
+    function deleteImage(img) {
+        if (confirm('Delete this image?')) {
+            img.remove();
+            deselectImage();
+            onPreviewEdit();
+        }
+    }
+
+    // ── Drag & Drop for images ────────────────────────────────────────────
+    function setupImageDragDrop() {
+        const doc = preview.contentDocument;
+        if (!doc || !doc.body) return;
+
+        doc.body.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        doc.body.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const files = Array.from(e.dataTransfer.files);
+            const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+            imageFiles.forEach(file => handleImageFile(file));
+        });
+    }
+
+    // ── Paste images from clipboard ───────────────────────────────────────
+    function setupImagePaste() {
+        const doc = preview.contentDocument;
+        if (!doc) return;
+
+        doc.addEventListener('paste', (e) => {
+            const items = Array.from(e.clipboardData.items);
+            const imageItems = items.filter(item => item.type.startsWith('image/'));
+
+            if (imageItems.length > 0) {
+                e.preventDefault();
+                imageItems.forEach(item => {
+                    const file = item.getAsFile();
+                    if (file) handleImageFile(file);
+                });
+            }
+        });
+    }
+
+    // ── Media (YouTube/Vimeo) embedding ───────────────────────────────────
+    function insertMedia() {
+        const url = prompt('Enter YouTube or Vimeo URL:', '');
+        if (!url) return;
+
+        const embedCode = getEmbedCode(url);
+        if (embedCode) {
+            cmd('insertHTML', embedCode);
+        } else {
+            alert('Invalid URL. Please enter a YouTube or Vimeo URL.');
+        }
+    }
+
+    function getEmbedCode(url) {
+        // YouTube
+        let match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+        if (match) {
+            const videoId = match[1];
+            return `<div style="position:relative;padding-bottom:56.25%;height:0;margin:16px 0">
+                <iframe src="https://www.youtube.com/embed/${videoId}"
+                    style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;border-radius:8px"
+                    allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"
+                    allowfullscreen></iframe>
+            </div>`;
+        }
+
+        // Vimeo
+        match = url.match(/vimeo\.com\/(\d+)/);
+        if (match) {
+            const videoId = match[1];
+            return `<div style="position:relative;padding-bottom:56.25%;height:0;margin:16px 0">
+                <iframe src="https://player.vimeo.com/video/${videoId}"
+                    style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;border-radius:8px"
+                    allow="autoplay;fullscreen;picture-in-picture"
+                    allowfullscreen></iframe>
+            </div>`;
+        }
+
+        return null;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  FLOATING TOOLBAR (Medium-style on text selection)
+    // ══════════════════════════════════════════════════════════════════════
+
+    const floatingToolbar = document.getElementById('floatingToolbar');
+    let floatingToolbarTimeout = null;
+
+    function showFloatingToolbar() {
+        if (!editorCore || !editorCore.selection) return;
+
+        const sel = editorCore.selection.getSelection();
+        if (!sel || sel.isCollapsed || sel.toString().trim() === '') {
+            hideFloatingToolbar();
+            return;
+        }
+
+        // Get selection bounding rect in preview
+        let range;
+        try {
+            range = sel.getRangeAt(0);
+        } catch (e) {
+            return;
+        }
+
+        const rects = range.getClientRects();
+        if (rects.length === 0) return;
+
+        // Use first rect for positioning
+        const rect = rects[0];
+        const previewRect = preview.getBoundingClientRect();
+
+        // Position toolbar above selection (centered)
+        const toolbarWidth = 280; // Approximate width
+        const left = previewRect.left + rect.left + (rect.width / 2) - (toolbarWidth / 2);
+        const top = previewRect.top + rect.top - 48; // 48px above selection
+
+        floatingToolbar.style.left = Math.max(10, left) + 'px';
+        floatingToolbar.style.top = Math.max(10, top) + 'px';
+
+        // Show with animation
+        clearTimeout(floatingToolbarTimeout);
+        floatingToolbarTimeout = setTimeout(() => {
+            floatingToolbar.classList.add('show');
+            updateFloatingToolbar();
+        }, 100);
+    }
+
+    function hideFloatingToolbar() {
+        clearTimeout(floatingToolbarTimeout);
+        floatingToolbar.classList.remove('show');
+    }
+
+    function updateFloatingToolbar() {
+        if (!preview.contentDocument) return;
+
+        const doc = preview.contentDocument;
+        const buttons = floatingToolbar.querySelectorAll('button');
+
+        try {
+            buttons[0].classList.toggle('active', doc.queryCommandState('bold'));
+            buttons[1].classList.toggle('active', doc.queryCommandState('italic'));
+            buttons[2].classList.toggle('active', doc.queryCommandState('underline'));
+        } catch (e) {}
+    }
+
+    function promptHighlight() {
+        const color = prompt('Enter highlight color (name or hex):', 'yellow');
+        if (color) cmd('hiliteColor', color);
+    }
+
+    // Show/hide floating toolbar on selection change
+    let selectionChangeTimeout = null;
+    function handleSelectionForFloatingToolbar() {
+        clearTimeout(selectionChangeTimeout);
+        selectionChangeTimeout = setTimeout(() => {
+            const sel = editorCore?.selection?.getSelection();
+            if (sel && !sel.isCollapsed && sel.toString().trim() !== '') {
+                showFloatingToolbar();
+            } else {
+                hideFloatingToolbar();
+            }
+        }, 150);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  KEYBOARD SHORTCUTS
+    // ══════════════════════════════════════════════════════════════════════
+
+    function setupKeyboardShortcuts() {
+        const doc = preview.contentDocument;
+        if (!doc) return;
+
+        doc.addEventListener('keydown', (e) => {
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+            // Prevent default for our shortcuts
+            const shortcuts = {
+                'B': () => { e.preventDefault(); cmd('bold'); },
+                'I': () => { e.preventDefault(); cmd('italic'); },
+                'U': () => { e.preventDefault(); cmd('underline'); },
+                'K': () => { e.preventDefault(); insertLink(); },
+                'S': () => { e.preventDefault(); showSavedNotification(); },
+            };
+
+            // Undo/Redo
+            if (cmdOrCtrl && e.key === 'z' && e.shiftKey) {
+                e.preventDefault();
+                cmd('redo');
+                return;
+            }
+            if (cmdOrCtrl && e.key === 'z') {
+                e.preventDefault();
+                cmd('undo');
+                return;
+            }
+
+            // Execute shortcuts
+            if (cmdOrCtrl && shortcuts[e.key.toUpperCase()]) {
+                shortcuts[e.key.toUpperCase()]();
+                return;
+            }
+
+            // Cmd/Ctrl+F for find & replace
+            if (cmdOrCtrl && e.key === 'f') {
+                e.preventDefault();
+                openFindReplace();
+                return;
+            }
+
+            // Future: Cmd/Ctrl+Shift+V for paste without formatting
+            if (cmdOrCtrl && e.shiftKey && e.key === 'v') {
+                e.preventDefault();
+                alert('Paste without formatting will be implemented soon!');
+                return;
+            }
+        });
+    }
+
+    function showSavedNotification() {
+        // Save to localStorage
+        localStorage.setItem('savedCode', editor.value);
+
+        // Show toast notification
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        `;
+        toast.textContent = `✓ Saved at ${new Date().toLocaleTimeString()}`;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  PHASE 2: PROFESSIONAL FEATURES
+    // ══════════════════════════════════════════════════════════════════════
+
+    // ── Full-Screen Mode ──────────────────────────────────────────────────
+    let isFullscreen = false;
+
+    function toggleFullscreen() {
+        isFullscreen = !isFullscreen;
+        document.body.classList.toggle('fullscreen', isFullscreen);
+
+        if (isFullscreen) {
+            // Add Esc listener
+            document.addEventListener('keydown', exitFullscreenOnEsc);
+        } else {
+            document.removeEventListener('keydown', exitFullscreenOnEsc);
+        }
+    }
+
+    function exitFullscreenOnEsc(e) {
+        if (e.key === 'Escape' && isFullscreen) {
+            toggleFullscreen();
+        }
+    }
+
+    // ── Document Statistics ───────────────────────────────────────────────
+    function toggleStats() {
+        const panel = document.getElementById('statsPanel');
+        const isVisible = panel.classList.toggle('show');
+
+        if (isVisible) {
+            updateStats();
+            // Update stats every 2 seconds while visible
+            if (!window.statsInterval) {
+                window.statsInterval = setInterval(() => {
+                    if (panel.classList.contains('show')) {
+                        updateStats();
+                    }
+                }, 2000);
+            }
+        } else {
+            if (window.statsInterval) {
+                clearInterval(window.statsInterval);
+                window.statsInterval = null;
+            }
+        }
+    }
+
+    function updateStats() {
+        const doc = preview.contentDocument;
+        if (!doc || !doc.body) return;
+
+        const text = doc.body.innerText || '';
+        const chars = text.length;
+        const charsNoSpaces = text.replace(/\s/g, '').length;
+        const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+        const paragraphs = doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li').length;
+        const readingTime = Math.ceil(words / 200); // 200 words per minute
+
+        document.getElementById('statChars').textContent = chars.toLocaleString();
+        document.getElementById('statCharsNoSpaces').textContent = charsNoSpaces.toLocaleString();
+        document.getElementById('statWords').textContent = words.toLocaleString();
+        document.getElementById('statParagraphs').textContent = paragraphs;
+        document.getElementById('statReadingTime').textContent = readingTime + ' min';
+    }
+
+    // ── Export HTML ───────────────────────────────────────────────────────
+    function exportHTML() {
+        const html = editor.value;
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'document.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast('✓ HTML exported successfully!', 'success');
+    }
+
+    // ── Toast Notifications ───────────────────────────────────────────────
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: ${bgColor};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10000;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        // Trigger animation
+        setTimeout(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+        }, 10);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // ── Responsive Preview Modes ──────────────────────────────────────────
+    let currentPreviewMode = 'desktop';
+
+    function setPreviewMode(mode) {
+        currentPreviewMode = mode;
+        const previewPane = document.querySelector('.preview-pane');
+
+        // Remove all mode classes
+        previewPane.classList.remove('desktop', 'tablet', 'mobile');
+
+        // Add new mode class
+        previewPane.classList.add(mode);
+
+        // Update button states
+        document.getElementById('btnDesktop').classList.toggle('active', mode === 'desktop');
+        document.getElementById('btnTablet').classList.toggle('active', mode === 'tablet');
+        document.getElementById('btnMobile').classList.toggle('active', mode === 'mobile');
+
+        const widthText = mode === 'desktop' ? '100%' : mode === 'tablet' ? '768px' : '375px';
+        showToast(`Preview: ${widthText}`, 'info');
+    }
+
+    // Set initial preview mode
+    setTimeout(() => setPreviewMode('desktop'), 100);
+
+    // ── Find & Replace ────────────────────────────────────────────────────
+    let findMatches = [];
+    let currentMatchIndex = -1;
+    const MATCH_CLASS = '__find-match';
+    const CURRENT_MATCH_CLASS = '__current-match';
+
+    function openFindReplace() {
+        const panel = document.getElementById('findReplacePanel');
+        panel.classList.add('show');
+        document.getElementById('findInput').focus();
+
+        // Inject highlight styles into preview
+        const doc = preview.contentDocument;
+        if (!doc.getElementById('__find-style')) {
+            const style = doc.createElement('style');
+            style.id = '__find-style';
+            style.textContent = `
+                .__find-match {
+                    background-color: #fef08a !important;
+                    border-bottom: 2px solid #eab308;
+                }
+                .__current-match {
+                    background-color: #fbbf24 !important;
+                    border-bottom: 2px solid #f59e0b;
+                }
+            `;
+            doc.head.appendChild(style);
+        }
+    }
+
+    function closeFindReplace() {
+        const panel = document.getElementById('findReplacePanel');
+        panel.classList.remove('show');
+        clearMatches();
+    }
+
+    function handleFindInput(e) {
+        if (e.key === 'Enter') {
+            if (e.shiftKey) {
+                findPrevious();
+            } else {
+                findNext();
+            }
+            return;
+        }
+
+        // Clear previous matches and search
+        clearMatches();
+        const query = document.getElementById('findInput').value;
+        if (query) {
+            performFind(query);
+        }
+    }
+
+    function performFind(query) {
+        const doc = preview.contentDocument;
+        if (!doc || !doc.body) return;
+
+        const caseSensitive = document.getElementById('caseSensitive').checked;
+        const searchText = caseSensitive ? query : query.toLowerCase();
+
+        // Walk through all text nodes
+        const walker = doc.createTreeWalker(
+            doc.body,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+
+        const matches = [];
+        let node;
+
+        while (node = walker.nextNode()) {
+            const nodeText = caseSensitive ? node.nodeValue : node.nodeValue.toLowerCase();
+            let index = 0;
+
+            while ((index = nodeText.indexOf(searchText, index)) !== -1) {
+                matches.push({ node, index, length: query.length });
+                index += query.length;
+            }
+        }
+
+        // Highlight all matches
+        findMatches = [];
+        matches.forEach(match => {
+            const { node, index, length } = match;
+            const range = doc.createRange();
+            range.setStart(node, index);
+            range.setEnd(node, index + length);
+
+            const span = doc.createElement('span');
+            span.className = MATCH_CLASS;
+            try {
+                range.surroundContents(span);
+                findMatches.push(span);
+            } catch (e) {
+                // Skip if range can't be surrounded
+            }
+        });
+
+        // Update info
+        const info = document.getElementById('searchInfo');
+        if (findMatches.length > 0) {
+            currentMatchIndex = 0;
+            highlightCurrentMatch();
+            info.textContent = `Found ${findMatches.length} match${findMatches.length !== 1 ? 'es' : ''}`;
+        } else {
+            info.textContent = query ? 'No matches found' : '';
+            currentMatchIndex = -1;
+        }
+    }
+
+    function clearMatches() {
+        const doc = preview.contentDocument;
+        if (!doc) return;
+
+        // Remove all highlight spans
+        doc.querySelectorAll(`.${MATCH_CLASS}`).forEach(span => {
+            const parent = span.parentNode;
+            while (span.firstChild) {
+                parent.insertBefore(span.firstChild, span);
+            }
+            parent.removeChild(span);
+            parent.normalize(); // Merge adjacent text nodes
+        });
+
+        findMatches = [];
+        currentMatchIndex = -1;
+        document.getElementById('searchInfo').textContent = '';
+    }
+
+    function highlightCurrentMatch() {
+        if (currentMatchIndex < 0 || currentMatchIndex >= findMatches.length) return;
+
+        // Remove current highlight from all
+        findMatches.forEach(span => {
+            span.classList.remove(CURRENT_MATCH_CLASS);
+        });
+
+        // Highlight current
+        const current = findMatches[currentMatchIndex];
+        current.classList.add(CURRENT_MATCH_CLASS);
+
+        // Scroll into view
+        current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Update info
+        document.getElementById('searchInfo').textContent =
+            `Match ${currentMatchIndex + 1} of ${findMatches.length}`;
+    }
+
+    function findNext() {
+        if (findMatches.length === 0) {
+            const query = document.getElementById('findInput').value;
+            if (query) performFind(query);
+            return;
+        }
+
+        currentMatchIndex = (currentMatchIndex + 1) % findMatches.length;
+        highlightCurrentMatch();
+    }
+
+    function findPrevious() {
+        if (findMatches.length === 0) {
+            const query = document.getElementById('findInput').value;
+            if (query) performFind(query);
+            return;
+        }
+
+        currentMatchIndex = currentMatchIndex - 1;
+        if (currentMatchIndex < 0) currentMatchIndex = findMatches.length - 1;
+        highlightCurrentMatch();
+    }
+
+    function replaceOne() {
+        if (currentMatchIndex < 0 || currentMatchIndex >= findMatches.length) return;
+
+        const replaceText = document.getElementById('replaceInput').value;
+        const current = findMatches[currentMatchIndex];
+
+        // Replace the text
+        current.textContent = replaceText;
+
+        // Remove the span wrapper
+        const parent = current.parentNode;
+        while (current.firstChild) {
+            parent.insertBefore(current.firstChild, current);
+        }
+        parent.removeChild(current);
+        parent.normalize();
+
+        // Remove from matches array
+        findMatches.splice(currentMatchIndex, 1);
+
+        // Update display
+        if (findMatches.length > 0) {
+            if (currentMatchIndex >= findMatches.length) {
+                currentMatchIndex = findMatches.length - 1;
+            }
+            highlightCurrentMatch();
+        } else {
+            document.getElementById('searchInfo').textContent = 'No more matches';
+            currentMatchIndex = -1;
+        }
+
+        // Sync changes
+        onPreviewEdit();
+    }
+
+    function replaceAll() {
+        if (findMatches.length === 0) return;
+
+        const replaceText = document.getElementById('replaceInput').value;
+        const count = findMatches.length;
+
+        // Replace all matches
+        findMatches.forEach(span => {
+            span.textContent = replaceText;
+            const parent = span.parentNode;
+            while (span.firstChild) {
+                parent.insertBefore(span.firstChild, span);
+            }
+            parent.removeChild(span);
+            parent.normalize();
+        });
+
+        // Clear matches
+        findMatches = [];
+        currentMatchIndex = -1;
+        document.getElementById('searchInfo').textContent = `Replaced ${count} match${count !== 1 ? 'es' : ''}`;
+
+        // Sync changes
+        onPreviewEdit();
+
+        showToast(`✓ Replaced ${count} match${count !== 1 ? 'es' : ''}`, 'success');
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  1.  TOGGLE SOURCE PANE
+    // ══════════════════════════════════════════════════════════════════════
+
+    function toggleSource() {
+        sourceHidden = !sourceHidden;
+        container.classList.toggle('source-hidden', sourceHidden);
+        const btn = document.getElementById('btnToggleSource');
+        btn.innerHTML = sourceHidden ? '&#9654; Show Source' : '&#9664; Hide Source';
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  2.  TABLE EDITING
+    // ══════════════════════════════════════════════════════════════════════
+
+    let selectedCells  = [];
+    let activeTable    = null;
+    let lastClickedCell = null;
+
+    // ── Detect table context ─────────────────────────────────────────────
+
+    function detectTableContext() {
+        const doc = preview.contentDocument;
+        const sel = doc.getSelection();
+        let el = sel && sel.anchorNode;
+        if (!el) return;
+        if (el.nodeType === 3) el = el.parentElement;
+        if (!el) return;
+
+        const cell  = el.closest ? el.closest('td, th') : null;
+        const table = cell ? cell.closest('table') : null;
+
+        if (table) {
+            activeTable = table;
+            document.getElementById('tableToolbar').style.display = 'flex';
+            if (cell) updateCellInputs(cell);
+        } else {
+            activeTable = null;
+            document.getElementById('tableToolbar').style.display = 'none';
+        }
+    }
+
+    // ── Preview click: cell selection + format painter ───────────────────
+
+    function onPreviewClick(e) {
+        // Format painter application is handled on mouseup instead
+        const cell = e.target.closest ? e.target.closest('td, th') : null;
+        const table = cell ? cell.closest('table') : null;
+
+        if (table) {
+            activeTable = table;
+            document.getElementById('tableToolbar').style.display = 'flex';
+        }
+
+        if (cell) {
+            handleCellClick(cell, e);
+        } else {
+            clearCellSelection();
+        }
+    }
+
+    function handleCellClick(cell, e) {
+        if (e.ctrlKey || e.metaKey) {
+            // Toggle this cell
+            const idx = selectedCells.indexOf(cell);
+            if (idx >= 0) {
+                selectedCells.splice(idx, 1);
+                cell.classList.remove('__csel');
+            } else {
+                selectedCells.push(cell);
+                cell.classList.add('__csel');
+            }
+        } else if (e.shiftKey && lastClickedCell && cell.parentElement === lastClickedCell.parentElement) {
+            // Range select within same row
+            const row   = cell.parentElement;
+            const start = Math.min(cell.cellIndex, lastClickedCell.cellIndex);
+            const end   = Math.max(cell.cellIndex, lastClickedCell.cellIndex);
+            clearCellSelection();
+            for (let i = start; i <= end; i++) {
+                if (row.cells[i]) {
+                    selectedCells.push(row.cells[i]);
+                    row.cells[i].classList.add('__csel');
+                }
+            }
+        } else if (e.shiftKey && lastClickedCell) {
+            // Range select across rows (rectangular)
+            const table = cell.closest('table');
+            if (table && lastClickedCell.closest('table') === table) {
+                const r1 = Math.min(cell.parentElement.rowIndex, lastClickedCell.parentElement.rowIndex);
+                const r2 = Math.max(cell.parentElement.rowIndex, lastClickedCell.parentElement.rowIndex);
+                const c1 = Math.min(cell.cellIndex, lastClickedCell.cellIndex);
+                const c2 = Math.max(cell.cellIndex, lastClickedCell.cellIndex);
+                clearCellSelection();
+                for (let r = r1; r <= r2; r++) {
+                    const row = table.rows[r];
+                    if (!row) continue;
+                    for (let c = c1; c <= c2; c++) {
+                        if (row.cells[c]) {
+                            selectedCells.push(row.cells[c]);
+                            row.cells[c].classList.add('__csel');
+                        }
+                    }
+                }
+            }
+        } else {
+            // Single cell select
+            clearCellSelection();
+            selectedCells.push(cell);
+            cell.classList.add('__csel');
+        }
+
+        lastClickedCell = cell;
+        document.getElementById('cellSelCount').textContent = selectedCells.length;
+        if (selectedCells.length > 0) updateCellInputs(selectedCells[0]);
+    }
+
+    function clearCellSelection() {
+        selectedCells.forEach(c => { if (c.isConnected) c.classList.remove('__csel'); });
+        selectedCells = [];
+        lastClickedCell = null;
+        document.getElementById('cellSelCount').textContent = '0';
+    }
+
+    function selectAllCells() {
+        if (!activeTable) return;
+        clearCellSelection();
+        activeTable.querySelectorAll('td, th').forEach(c => {
+            selectedCells.push(c);
+            c.classList.add('__csel');
+        });
+        document.getElementById('cellSelCount').textContent = selectedCells.length;
+    }
+
+    function updateCellInputs(cell) {
+        document.getElementById('tblCellW').value   = parseInt(cell.style.width)   || '';
+        document.getElementById('tblCellH').value   = parseInt(cell.style.height)  || '';
+        document.getElementById('tblCellPad').value  = parseInt(cell.style.padding) || '';
+        const bg = cell.style.backgroundColor;
+        document.getElementById('tblCellColor').value = bg ? rgbToHex(bg) : '#ffffff';
+    }
+
+    // ── Row / Column operations ──────────────────────────────────────────
+
+    function getActiveCell() {
+        if (selectedCells.length > 0) return selectedCells[0];
+        const doc = preview.contentDocument;
+        const sel = doc.getSelection();
+        let el = sel && sel.anchorNode;
+        if (el && el.nodeType === 3) el = el.parentElement;
+        return el ? (el.closest ? el.closest('td, th') : null) : null;
+    }
+
+    function addRow(pos) {
+        const cell = getActiveCell();
+        if (!cell) return;
+        const row = cell.parentElement;
+        const table = row.closest('table');
+        const numCols = row.cells.length;
+        const newRow = table.insertRow(pos === 'above' ? row.rowIndex : row.rowIndex + 1);
+        for (let i = 0; i < numCols; i++) {
+            const td = newRow.insertCell();
+            td.innerHTML = '&nbsp;';
+            td.style.cssText = row.cells[0] ? row.cells[0].style.cssText.replace(/background[^;]*;?/gi, '') : 'padding:8px 10px;border:1px solid #d1d5db';
+        }
+        onPreviewEdit();
+    }
+
+    function deleteRow() {
+        const cell = getActiveCell();
+        if (!cell) return;
+        const row = cell.parentElement;
+        const table = row.closest('table');
+        if (table.rows.length <= 1) { alert('Cannot delete the last row.'); return; }
+        clearCellSelection();
+        row.remove();
+        onPreviewEdit();
+        detectTableContext();
+    }
+
+    function addCol(pos) {
+        const cell = getActiveCell();
+        if (!cell) return;
+        const table = cell.closest('table');
+        const colIdx = cell.cellIndex;
+        const insertIdx = pos === 'left' ? colIdx : colIdx + 1;
+        for (let r = 0; r < table.rows.length; r++) {
+            const row = table.rows[r];
+            const td  = row.insertCell(Math.min(insertIdx, row.cells.length));
+            td.innerHTML = '&nbsp;';
+            const isHeader = row.parentElement.tagName === 'THEAD';
+            if (isHeader) {
+                // Convert td to th
+                const th = preview.contentDocument.createElement('th');
+                th.innerHTML = td.innerHTML;
+                th.style.cssText = 'background:#f3f4f6;padding:8px 10px;border:1px solid #d1d5db;text-align:left';
+                row.replaceChild(th, td);
+            } else {
+                td.style.cssText = 'padding:8px 10px;border:1px solid #d1d5db';
+            }
+        }
+        onPreviewEdit();
+    }
+
+    function deleteCol() {
+        const cell = getActiveCell();
+        if (!cell) return;
+        const table = cell.closest('table');
+        const colIdx = cell.cellIndex;
+        if (table.rows[0] && table.rows[0].cells.length <= 1) { alert('Cannot delete the last column.'); return; }
+        clearCellSelection();
+        for (let r = table.rows.length - 1; r >= 0; r--) {
+            if (table.rows[r].cells[colIdx]) table.rows[r].deleteCell(colIdx);
+        }
+        onPreviewEdit();
+        detectTableContext();
+    }
+
+    // ── Merge / Split ────────────────────────────────────────────────────
+
+    function mergeCells() {
+        if (selectedCells.length < 2) { alert('Select 2+ cells (Ctrl/Cmd+Click or Shift+Click) to merge.'); return; }
+
+        // Check if all cells belong to same table
+        const table = selectedCells[0].closest('table');
+        if (!selectedCells.every(c => c.closest('table') === table)) { alert('All cells must be in the same table.'); return; }
+
+        // Determine bounding rectangle
+        let minR = Infinity, maxR = -1, minC = Infinity, maxC = -1;
+        selectedCells.forEach(c => {
+            const r = c.parentElement.rowIndex;
+            const ci = c.cellIndex;
+            if (r < minR) minR = r;
+            if (r > maxR) maxR = r;
+            if (ci < minC) minC = ci;
+            if (ci > maxC) maxC = ci;
+        });
+
+        const rowSpan = maxR - minR + 1;
+        const colSpan = maxC - minC + 1;
+
+        // Collect content from all cells & remove non-anchor cells
+        const anchor = table.rows[minR].cells[minC];
+        let content = '';
+        for (let r = minR; r <= maxR; r++) {
+            const row = table.rows[r];
+            if (!row) continue;
+            for (let c = maxC; c >= minC; c--) {
+                const td = row.cells[c];
+                if (!td) continue;
+                if (td !== anchor) {
+                    if (td.textContent.trim()) content = td.textContent.trim() + ' ' + content;
+                    td.remove();
+                }
+            }
+        }
+        if (content.trim()) anchor.innerHTML += ' ' + content.trim();
+        anchor.colSpan = colSpan;
+        anchor.rowSpan = rowSpan;
+
+        clearCellSelection();
+        selectedCells.push(anchor);
+        anchor.classList.add('__csel');
+        document.getElementById('cellSelCount').textContent = '1';
+        onPreviewEdit();
+    }
+
+    function splitCell() {
+        const cell = selectedCells.length === 1 ? selectedCells[0] : getActiveCell();
+        if (!cell) { alert('Select a merged cell to split.'); return; }
+
+        const cs = cell.colSpan || 1;
+        const rs = cell.rowSpan || 1;
+        if (cs <= 1 && rs <= 1) { alert('This cell is not merged.'); return; }
+
+        const table = cell.closest('table');
+        const rowIdx = cell.parentElement.rowIndex;
+        const colIdx = cell.cellIndex;
+        const baseStyle = cell.style.cssText.replace(/width[^;]*;?/gi, '');
+
+        // Expand columns in the anchor row
+        cell.colSpan = 1;
+        cell.rowSpan = 1;
+        const row = cell.parentElement;
+        for (let c = 1; c < cs; c++) {
+            const td = preview.contentDocument.createElement(cell.tagName);
+            td.innerHTML = '&nbsp;';
+            td.style.cssText = baseStyle;
+            if (cell.nextSibling) row.insertBefore(td, cell.nextSibling);
+            else row.appendChild(td);
+        }
+
+        // Expand spanned rows
+        for (let r = 1; r < rs; r++) {
+            const targetRow = table.rows[rowIdx + r];
+            if (!targetRow) continue;
+            for (let c = 0; c < cs; c++) {
+                const td = preview.contentDocument.createElement(cell.tagName);
+                td.innerHTML = '&nbsp;';
+                td.style.cssText = baseStyle;
+                if (targetRow.cells[colIdx]) targetRow.insertBefore(td, targetRow.cells[colIdx]);
+                else targetRow.appendChild(td);
+            }
+        }
+
+        clearCellSelection();
+        onPreviewEdit();
+    }
+
+    // ── Cell property setters ────────────────────────────────────────────
+
+    function setCellProp(prop, value) {
+        const cells = selectedCells.length ? selectedCells : [getActiveCell()].filter(Boolean);
+        cells.forEach(c => c.style[prop] = value);
+        if (cells.length) onPreviewEdit();
+    }
+
+    function setCellColor(color) {
+        const cells = selectedCells.length ? selectedCells : [getActiveCell()].filter(Boolean);
+        cells.forEach(c => c.style.backgroundColor = color);
+        if (cells.length) onPreviewEdit();
+    }
+
+    function rgbToHex(rgb) {
+        if (!rgb || rgb === 'transparent') return '#ffffff';
+        if (rgb.startsWith('#')) return rgb;
+        const parts = rgb.match(/\d+/g);
+        if (!parts || parts.length < 3) return '#ffffff';
+        return '#' + parts.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
+    }
+
+    function applyBorder(side) {
+        const cells = selectedCells.length ? selectedCells : [getActiveCell()].filter(Boolean);
+        if (!cells.length) return;
+
+        const w = document.getElementById('tblBorderW').value + 'px';
+        const s = document.getElementById('tblBorderS').value;
+        const c = document.getElementById('tblBorderC').value;
+        const val = `${w} ${s} ${c}`;
+
+        cells.forEach(cell => {
+            if (side === 'all') {
+                cell.style.border = val;
+            } else if (side === 'none') {
+                cell.style.border = 'none';
+            } else {
+                cell.style['border' + side] = val;
+            }
+        });
+        onPreviewEdit();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  3.  FORMAT PAINTER
+    // ══════════════════════════════════════════════════════════════════════
+
+    let formatPainterActive = false;
+    let copiedFormat = null;
+
+    function toggleFormatPainter() {
+        if (formatPainterActive) { deactivateFormatPainter(); return; }
+
+        restoreSelection();
+        copiedFormat = captureFormat();
+        if (!copiedFormat) {
+            alert('Place your cursor in styled text or click a table cell first, then press Format Painter.');
+            return;
+        }
+
+        formatPainterActive = true;
+        document.getElementById('btnFmtPainter').classList.add('active');
+        const doc = preview.contentDocument;
+        if (doc.body) doc.body.classList.add('__fmtptr');
+    }
+
+    function deactivateFormatPainter() {
+        formatPainterActive = false;
+        copiedFormat = null;
+        document.getElementById('btnFmtPainter').classList.remove('active');
+        const doc = preview.contentDocument;
+        if (doc && doc.body) doc.body.classList.remove('__fmtptr');
+    }
+
+    function captureFormat() {
+        const doc = preview.contentDocument;
+        const sel = doc.getSelection();
+        if (!sel || sel.rangeCount === 0) return null;
+
+        let el = sel.anchorNode;
+        if (!el) return null;
+        if (el.nodeType === 3) el = el.parentElement;
+        if (!el) return null;
+
+        const cs = doc.defaultView.getComputedStyle(el);
+        const fmt = {
+            fontFamily: cs.fontFamily,
+            fontSize: cs.fontSize,
+            fontWeight: cs.fontWeight,
+            fontStyle: cs.fontStyle,
+            textDecorationLine: cs.textDecorationLine || cs.textDecoration || '',
+            color: cs.color,
+            backgroundColor: cs.backgroundColor,
+        };
+
+        // Cell-specific
+        const cell = el.closest ? el.closest('td, th') : null;
+        if (cell) {
+            const cc = doc.defaultView.getComputedStyle(cell);
+            fmt.isCell = true;
+            fmt.cellPadding      = cc.padding;
+            fmt.cellBorderTop    = cc.borderTop;
+            fmt.cellBorderRight  = cc.borderRight;
+            fmt.cellBorderBottom = cc.borderBottom;
+            fmt.cellBorderLeft   = cc.borderLeft;
+            fmt.cellTextAlign    = cc.textAlign;
+            fmt.cellVerticalAlign = cc.verticalAlign;
+            fmt.cellBgColor      = cc.backgroundColor;
+        }
+
+        return fmt;
+    }
+
+    function onPreviewMouseUp(e) {
+        if (!formatPainterActive || !copiedFormat) return;
+
+        const doc = preview.contentDocument;
+        const sel = doc.getSelection();
+
+        // Apply cell format if clicked on a cell
+        const cell = e.target.closest ? e.target.closest('td, th') : null;
+        if (cell && copiedFormat.isCell) {
+            cell.style.padding        = copiedFormat.cellPadding;
+            cell.style.borderTop      = copiedFormat.cellBorderTop;
+            cell.style.borderRight    = copiedFormat.cellBorderRight;
+            cell.style.borderBottom   = copiedFormat.cellBorderBottom;
+            cell.style.borderLeft     = copiedFormat.cellBorderLeft;
+            cell.style.textAlign      = copiedFormat.cellTextAlign;
+            cell.style.verticalAlign  = copiedFormat.cellVerticalAlign;
+            cell.style.backgroundColor = copiedFormat.cellBgColor;
+        }
+
+        // Apply text format to selection
+        if (sel && !sel.isCollapsed) {
+            applyTextFormat(copiedFormat);
+        }
+
+        deactivateFormatPainter();
+        onPreviewEdit();
+    }
+
+    function applyTextFormat(fmt) {
+        const doc = preview.contentDocument;
+
+        // Color
+        doc.execCommand('foreColor', false, fmt.color);
+
+        // Font
+        const family = fmt.fontFamily.split(',')[0].replace(/['"]/g, '').trim();
+        doc.execCommand('fontName', false, family);
+
+        // Highlight
+        if (fmt.backgroundColor && fmt.backgroundColor !== 'rgba(0, 0, 0, 0)' && fmt.backgroundColor !== 'transparent') {
+            doc.execCommand('hiliteColor', false, fmt.backgroundColor);
+        }
+
+        // Bold
+        const isBold = doc.queryCommandState('bold');
+        const wantBold = parseInt(fmt.fontWeight) >= 700 || fmt.fontWeight === 'bold';
+        if (isBold !== wantBold) doc.execCommand('bold');
+
+        // Italic
+        const isItalic = doc.queryCommandState('italic');
+        if (isItalic !== (fmt.fontStyle === 'italic')) doc.execCommand('italic');
+
+        // Underline
+        const isUL = doc.queryCommandState('underline');
+        const wantUL = fmt.textDecorationLine.includes('underline');
+        if (isUL !== wantUL) doc.execCommand('underline');
+
+        // Strikethrough
+        const isST = doc.queryCommandState('strikeThrough');
+        const wantST = fmt.textDecorationLine.includes('line-through');
+        if (isST !== wantST) doc.execCommand('strikeThrough');
+
+        // Font size (map px → execCommand 1-7)
+        const px = parseInt(fmt.fontSize);
+        const sizeMap = [[10,'1'],[13,'2'],[16,'3'],[18,'4'],[24,'5'],[32,'6'],[9999,'7']];
+        const sz = (sizeMap.find(([max]) => px <= max) || [0,'3'])[1];
+        doc.execCommand('fontSize', false, sz);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  COPY & TEMPLATES
+    // ══════════════════════════════════════════════════════════════════════
+
+    function copyCode() {
+        navigator.clipboard.writeText(editor.value);
+        alert('HTML copied to clipboard!');
+    }
+
+    function loadTemplate(type) {
+        if (!type) return;
+        const templates = {
+            basic: `<!DOCTYPE html>
+<html>
+<head>
+<title>Basic Page</title>
+</head>
+<body>
+<h1>Hello World</h1>
+<p>This is a simple template.</p>
+</body>
+</html>`,
+            card: `<div style="max-width:300px;padding:20px;border:1px solid #ccc;border-radius:10px;">
+<h2>Card Title</h2>
+<p>This is a simple card layout.</p>
+<button>Click Me</button>
+</div>`,
+            email: `<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td align="center">
+<h1>Welcome!</h1>
+<p>This is a simple email template.</p>
+</td>
+</tr>
+</table>`
+        };
+        editor.value = templates[type];
+        updatePreview();
+    }
+
+    // ── Init ─────────────────────────────────────────────────────────────
+
+    const saved = localStorage.getItem('savedCode');
+    editor.value = saved || '<h1>Start editing your HTML here</h1>';
+    updatePreview();
+</script>
+
+</body>
+</html>
