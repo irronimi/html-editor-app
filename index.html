@@ -857,6 +857,12 @@
     <button title="Remove Cell Color" onclick="setCellColor('')" style="color:#dc2626">&#10005;</button>
     <span class="sep"></span>
 
+    <!-- Table indent -->
+    <span class="tb-label">Indent:</span>
+    <button title="Indent Table Left" onclick="indentTable(-1)">&#8592;</button>
+    <button title="Indent Table Right" onclick="indentTable(1)">&#8594;</button>
+    <span class="sep"></span>
+
     <!-- Selection info -->
     <span class="tb-label">Cells:</span>
     <span class="tb-label" id="cellSelCount" style="color:#1d4ed8">0</span>
@@ -1678,7 +1684,7 @@
         const cols = parseInt(prompt('Number of columns:', '3'));
         if (!rows || !cols || isNaN(rows) || isNaN(cols) || rows < 1 || cols < 1) return;
 
-        let html = '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;margin:8px 0">';
+        let html = '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin:8px 0">';
         html += '<thead><tr>';
         for (let c = 0; c < cols; c++) {
             html += `<th style="background:#f3f4f6;padding:8px 10px;border:1px solid #d1d5db;text-align:left">Header ${c + 1}</th>`;
@@ -3400,6 +3406,15 @@
         return '#' + parts.slice(0, 3).map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
     }
 
+    function indentTable(dir) {
+        if (!activeTable) return;
+        const current = parseInt(activeTable.style.marginLeft) || 0;
+        const step = 20;
+        const newMargin = Math.max(0, current + dir * step);
+        activeTable.style.marginLeft = newMargin ? newMargin + 'px' : '';
+        onPreviewEdit();
+    }
+
     function applyBorder(side) {
         const cells = selectedCells.length ? selectedCells : [getActiveCell()].filter(Boolean);
         if (!cells.length) return;
@@ -3493,21 +3508,13 @@
             const deltaX = ev.clientX - startX;
 
             let newLeft = startLeftWidth + deltaX;
-            let newRight = startRightWidth - deltaX;
+            if (newLeft < minWidth) newLeft = minWidth;
 
-            // Clamp
-            if (newLeft < minWidth) {
-                newLeft = minWidth;
-                newRight = startLeftWidth + startRightWidth - minWidth;
-            }
-            if (newRight < minWidth) {
-                newRight = minWidth;
-                newLeft = startLeftWidth + startRightWidth - minWidth;
-            }
-
-            // Apply to all cells in both columns
+            // Only resize the dragged column — table width adjusts naturally
             leftCells.forEach(c => c.style.width = newLeft + 'px');
-            rightCells.forEach(c => c.style.width = newRight + 'px');
+
+            // Remove width:100% from table if present so it can shrink
+            if (table.style.width === '100%') table.style.width = '';
 
             // Reposition handle
             const cellRect = leftCells[0].getBoundingClientRect();
