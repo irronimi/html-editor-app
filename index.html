@@ -781,6 +781,7 @@
     <input type="number" id="tblCellH" min="0" placeholder="auto" title="Cell Height (px)" onchange="setCellProp('height', this.value ? this.value+'px' : '')">
     <span class="tb-label">Pad:</span>
     <input type="number" id="tblCellPad" min="0" placeholder="8" title="Cell Padding (px)" onchange="setCellProp('padding', this.value ? this.value+'px' : '')">
+    <button id="btnWrapText" title="Toggle Text Wrap" onclick="toggleCellWrap()">Wrap</button>
     <span class="sep"></span>
 
     <!-- Border controls -->
@@ -1242,6 +1243,25 @@
             .__fmtptr, .__fmtptr * {
                 cursor: copy !important;
             }
+            .__col-resize-handle {
+                position: absolute;
+                width: 5px;
+                cursor: col-resize;
+                background: transparent;
+                z-index: 9999;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+            .__col-resize-handle:hover,
+            .__col-resize-handle.__active {
+                background: rgba(59, 130, 246, 0.4);
+            }
+            .__col-resize-active,
+            .__col-resize-active * {
+                cursor: col-resize !important;
+                user-select: none !important;
+                -webkit-user-select: none !important;
+            }
         `;
     }
 
@@ -1250,7 +1270,11 @@
         const s = doc.getElementById(ED_STYLE_ID);
         if (s) s.remove();
         doc.querySelectorAll('.__csel').forEach(el => el.classList.remove('__csel'));
-        if (doc.body) doc.body.classList.remove('__fmtptr');
+        doc.querySelectorAll('.__col-resize-handle').forEach(el => el.remove());
+        if (doc.body) {
+            doc.body.classList.remove('__fmtptr');
+            doc.body.classList.remove('__col-resize-active');
+        }
     }
 
     function restoreAfterSync() {
@@ -1259,6 +1283,7 @@
         if (formatPainterActive && preview.contentDocument.body) {
             preview.contentDocument.body.classList.add('__fmtptr');
         }
+        attachTableResizeHandles();
     }
 
     // ── Preview rendering ────────────────────────────────────────────────
@@ -1304,6 +1329,9 @@
         setupImageDragDrop();
         setupImagePaste();
         attachImageHandlers();
+
+        // Set up table column resize handles
+        attachTableResizeHandles();
 
         // Set up keyboard shortcuts
         setupKeyboardShortcuts();
@@ -2957,6 +2985,7 @@
         if (table) {
             activeTable = table;
             document.getElementById('tableToolbar').style.display = 'flex';
+            setTimeout(() => attachTableResizeHandles(), 0);
         }
 
         if (cell) {
@@ -3044,6 +3073,7 @@
         document.getElementById('tblCellPad').value  = parseInt(cell.style.padding) || '';
         const bg = cell.style.backgroundColor;
         document.getElementById('tblCellColor').value = bg ? rgbToHex(bg) : '#ffffff';
+        updateWrapButton(cell.style.whiteSpace !== 'nowrap');
     }
 
     // ── Row / Column operations ──────────────────────────────────────────
@@ -3227,6 +3257,36 @@
         if (cells.length) onPreviewEdit();
     }
 
+    function toggleCellWrap() {
+        const cells = selectedCells.length ? selectedCells : [getActiveCell()].filter(Boolean);
+        if (!cells.length) return;
+        const current = cells[0].style.whiteSpace;
+        const wrap = (current === 'nowrap') ? 'normal' : 'nowrap';
+        cells.forEach(c => {
+            c.style.whiteSpace = wrap;
+            c.style.wordWrap = (wrap === 'normal') ? 'break-word' : '';
+            c.style.overflowWrap = (wrap === 'normal') ? 'break-word' : '';
+
+            // Table needs fixed layout for wrapping to work
+            const table = c.closest('table');
+            if (table && wrap === 'normal') {
+                table.style.tableLayout = 'fixed';
+                // Cells need explicit widths under fixed layout
+                if (!c.style.width) {
+                    const computedWidth = c.getBoundingClientRect().width;
+                    c.style.width = Math.round(computedWidth) + 'px';
+                }
+            }
+        });
+        updateWrapButton(wrap !== 'nowrap');
+        onPreviewEdit();
+    }
+
+    function updateWrapButton(isWrapping) {
+        const btn = document.getElementById('btnWrapText');
+        if (btn) btn.classList.toggle('active', isWrapping);
+    }
+
     function rgbToHex(rgb) {
         if (!rgb || rgb === 'transparent') return '#ffffff';
         if (rgb.startsWith('#')) return rgb;
@@ -3254,6 +3314,122 @@
             }
         });
         onPreviewEdit();
+    }
+
+    // ── Column resize by dragging borders ─────────────────────────────────
+
+    function attachTableResizeHandles() {
+        const doc = preview.contentDocument;
+        if (!doc || !doc.body) return;
+
+        // Remove existing handles
+        doc.querySelectorAll('.__col-resize-handle').forEach(el => el.remove());
+
+        doc.querySelectorAll('table').forEach(table => {
+            // Need position context for absolute handles
+            const tableStyle = table.style.position;
+            if (!tableStyle || tableStyle === 'static') {
+                table.style.position = 'relative';
+            }
+
+            const firstRow = table.rows[0];
+            if (!firstRow) return;
+
+            for (let i = 0; i < firstRow.cells.length - 1; i++) {
+                const cell = firstRow.cells[i];
+                const handle = doc.createElement('div');
+                handle.className = '__col-resize-handle';
+
+                // Position at right edge of this cell
+                const cellRect = cell.getBoundingClientRect();
+                const tableRect = table.getBoundingClientRect();
+
+                handle.style.left = (cellRect.right - tableRect.left - 2.5) + 'px';
+                handle.style.top = '0';
+                handle.style.height = table.offsetHeight + 'px';
+
+                handle.setAttribute('data-col', i);
+
+                handle.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    initColumnResize(e, this, table);
+                });
+
+                table.appendChild(handle);
+            }
+        });
+    }
+
+    function initColumnResize(e, handle, table) {
+        const doc = preview.contentDocument;
+        const colIndex = parseInt(handle.getAttribute('data-col'));
+        const startX = e.clientX;
+
+        // Get current widths for all cells in affected columns
+        const leftCells = [];
+        const rightCells = [];
+        for (let r = 0; r < table.rows.length; r++) {
+            const row = table.rows[r];
+            if (row.cells[colIndex]) leftCells.push(row.cells[colIndex]);
+            if (row.cells[colIndex + 1]) rightCells.push(row.cells[colIndex + 1]);
+        }
+
+        const startLeftWidth = leftCells[0] ? leftCells[0].getBoundingClientRect().width : 100;
+        const startRightWidth = rightCells[0] ? rightCells[0].getBoundingClientRect().width : 100;
+        const minWidth = 30;
+
+        // Lock UI during drag
+        handle.classList.add('__active');
+        doc.body.classList.add('__col-resize-active');
+        doc.designMode = 'off';
+
+        function onMouseMove(ev) {
+            const deltaX = ev.clientX - startX;
+
+            let newLeft = startLeftWidth + deltaX;
+            let newRight = startRightWidth - deltaX;
+
+            // Clamp
+            if (newLeft < minWidth) {
+                newLeft = minWidth;
+                newRight = startLeftWidth + startRightWidth - minWidth;
+            }
+            if (newRight < minWidth) {
+                newRight = minWidth;
+                newLeft = startLeftWidth + startRightWidth - minWidth;
+            }
+
+            // Apply to all cells in both columns
+            leftCells.forEach(c => c.style.width = newLeft + 'px');
+            rightCells.forEach(c => c.style.width = newRight + 'px');
+
+            // Reposition handle
+            const cellRect = leftCells[0].getBoundingClientRect();
+            const tableRect = table.getBoundingClientRect();
+            handle.style.left = (cellRect.right - tableRect.left - 2.5) + 'px';
+        }
+
+        function onMouseUp() {
+            handle.classList.remove('__active');
+            doc.body.classList.remove('__col-resize-active');
+            doc.designMode = 'on';
+
+            doc.removeEventListener('mousemove', onMouseMove);
+            doc.removeEventListener('mouseup', onMouseUp);
+
+            // Sync changes and reposition all handles
+            onPreviewEdit();
+            setTimeout(() => attachTableResizeHandles(), 0);
+
+            // Update toolbar width input if cell is selected
+            if (selectedCells.length > 0) {
+                updateCellInputs(selectedCells[0]);
+            }
+        }
+
+        doc.addEventListener('mousemove', onMouseMove);
+        doc.addEventListener('mouseup', onMouseUp);
     }
 
     // ══════════════════════════════════════════════════════════════════════
