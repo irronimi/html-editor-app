@@ -367,6 +367,26 @@
             margin: 0 4px;
         }
 
+        .floating-toolbar select {
+            background: #334155;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .floating-toolbar input[type="color"] {
+            width: 28px;
+            height: 28px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 4px;
+            cursor: pointer;
+            background: transparent;
+            padding: 1px;
+        }
+
         /* ── Full-screen mode ──────────────────────────────── */
         body.fullscreen header,
         body.fullscreen .toolbar,
@@ -587,12 +607,40 @@
 
 <!-- ── Floating Toolbar ────────────────────────────────────────────────── -->
 <div class="floating-toolbar" id="floatingToolbar">
-    <button title="Bold (Cmd/Ctrl+B)" onclick="cmd('bold'); updateFloatingToolbar()"><b>B</b></button>
-    <button title="Italic (Cmd/Ctrl+I)" onclick="cmd('italic'); updateFloatingToolbar()"><i>I</i></button>
-    <button title="Underline (Cmd/Ctrl+U)" onclick="cmd('underline'); updateFloatingToolbar()"><u>U</u></button>
-    <span class="sep"></span>
-    <button title="Highlight" onclick="promptHighlight(); updateFloatingToolbar()">🎨 Highlight</button>
-    <button title="Link (Cmd/Ctrl+K)" onclick="insertLink(); updateFloatingToolbar()">🔗 Link</button>
+    <!-- Text selection mode -->
+    <div id="ftTextMode" style="display:flex; gap:4px; align-items:center">
+        <button title="Bold (Cmd/Ctrl+B)" onclick="cmd('bold'); updateFloatingToolbar()"><b>B</b></button>
+        <button title="Italic (Cmd/Ctrl+I)" onclick="cmd('italic'); updateFloatingToolbar()"><i>I</i></button>
+        <button title="Underline (Cmd/Ctrl+U)" onclick="cmd('underline'); updateFloatingToolbar()"><u>U</u></button>
+        <span class="sep"></span>
+        <button title="Copy Format" onclick="floatingCopyFormat()">Copy Format</button>
+        <button title="Paste Format" id="ftPasteFormat" onclick="floatingPasteFormat()">Paste Format</button>
+        <span class="sep"></span>
+        <select title="Font Size" id="ftFontSize" onchange="cmd('fontSize', this.value); updateFloatingToolbar()">
+            <option value="1">8pt</option>
+            <option value="2">10pt</option>
+            <option value="3" selected>12pt</option>
+            <option value="4">14pt</option>
+            <option value="5">18pt</option>
+            <option value="6">24pt</option>
+            <option value="7">36pt</option>
+        </select>
+    </div>
+    <!-- Cell selection mode -->
+    <div id="ftCellMode" style="display:none; gap:4px; align-items:center">
+        <span style="color:rgba(255,255,255,0.6); font-size:11px">Cell:</span>
+        <input type="color" id="ftCellBg" value="#ffffff" title="Cell Background" oninput="floatingSetCellColor(this.value)">
+        <button title="Remove Color" onclick="floatingSetCellColor('')" style="color:#f87171">&#10005;</button>
+        <span class="sep"></span>
+        <button id="ftWrapBtn" title="Toggle Text Wrap" onclick="toggleCellWrap(); updateFloatingToolbar()">Wrap</button>
+        <span class="sep"></span>
+        <button title="All Borders" onclick="applyBorder('all')">&#9635;</button>
+        <button title="No Borders" onclick="applyBorder('none')">&#9633;</button>
+        <button title="Top Border" onclick="applyBorder('Top')">T</button>
+        <button title="Right Border" onclick="applyBorder('Right')">R</button>
+        <button title="Bottom Border" onclick="applyBorder('Bottom')">B</button>
+        <button title="Left Border" onclick="applyBorder('Left')">L</button>
+    </div>
 </div>
 
 <!-- ── Stats Panel ─────────────────────────────────────────────────────── -->
@@ -2391,39 +2439,47 @@
     const floatingToolbar = document.getElementById('floatingToolbar');
     let floatingToolbarTimeout = null;
 
-    function showFloatingToolbar() {
-        if (!editorCore || !editorCore.selection) return;
-
-        const sel = editorCore.selection.getSelection();
-        if (!sel || sel.isCollapsed || sel.toString().trim() === '') {
-            hideFloatingToolbar();
-            return;
-        }
-
-        // Get selection bounding rect in preview
-        let range;
-        try {
-            range = sel.getRangeAt(0);
-        } catch (e) {
-            return;
-        }
-
-        const rects = range.getClientRects();
-        if (rects.length === 0) return;
-
-        // Use first rect for positioning
-        const rect = rects[0];
+    function showFloatingToolbar(mode) {
+        const ftText = document.getElementById('ftTextMode');
+        const ftCell = document.getElementById('ftCellMode');
         const previewRect = preview.getBoundingClientRect();
 
-        // Position toolbar above selection (centered)
-        const toolbarWidth = 280; // Approximate width
-        const left = previewRect.left + rect.left + (rect.width / 2) - (toolbarWidth / 2);
-        const top = previewRect.top + rect.top - 48; // 48px above selection
+        if (mode === 'cell') {
+            ftText.style.display = 'none';
+            ftCell.style.display = 'flex';
 
-        floatingToolbar.style.left = Math.max(10, left) + 'px';
-        floatingToolbar.style.top = Math.max(10, top) + 'px';
+            const cell = selectedCells[0] || lastClickedCell;
+            if (!cell) return;
+            const cellRect = cell.getBoundingClientRect();
+            const toolbarWidth = 340;
+            const left = previewRect.left + cellRect.left + (cellRect.width / 2) - (toolbarWidth / 2);
+            const top = previewRect.top + cellRect.top - 48;
+            floatingToolbar.style.left = Math.max(10, left) + 'px';
+            floatingToolbar.style.top = Math.max(10, top) + 'px';
+        } else {
+            if (!editorCore || !editorCore.selection) return;
+            const sel = editorCore.selection.getSelection();
+            if (!sel || sel.isCollapsed || sel.toString().trim() === '') {
+                hideFloatingToolbar();
+                return;
+            }
 
-        // Show with animation
+            ftText.style.display = 'flex';
+            ftCell.style.display = 'none';
+
+            let range;
+            try { range = sel.getRangeAt(0); } catch (e) { return; }
+            const rects = range.getClientRects();
+            if (rects.length === 0) return;
+
+            const rect = rects[0];
+            const toolbarWidth = 420;
+            const left = previewRect.left + rect.left + (rect.width / 2) - (toolbarWidth / 2);
+            const top = previewRect.top + rect.top - 48;
+            floatingToolbar.style.left = Math.max(10, left) + 'px';
+            floatingToolbar.style.top = Math.max(10, top) + 'px';
+        }
+
         clearTimeout(floatingToolbarTimeout);
         floatingToolbarTimeout = setTimeout(() => {
             floatingToolbar.classList.add('show');
@@ -2438,15 +2494,33 @@
 
     function updateFloatingToolbar() {
         if (!preview.contentDocument) return;
-
         const doc = preview.contentDocument;
-        const buttons = floatingToolbar.querySelectorAll('button');
+        const ftText = document.getElementById('ftTextMode');
+        const ftCell = document.getElementById('ftCellMode');
 
-        try {
-            buttons[0].classList.toggle('active', doc.queryCommandState('bold'));
-            buttons[1].classList.toggle('active', doc.queryCommandState('italic'));
-            buttons[2].classList.toggle('active', doc.queryCommandState('underline'));
-        } catch (e) {}
+        if (ftText.style.display !== 'none') {
+            const buttons = ftText.querySelectorAll('button');
+            try {
+                buttons[0].classList.toggle('active', doc.queryCommandState('bold'));
+                buttons[1].classList.toggle('active', doc.queryCommandState('italic'));
+                buttons[2].classList.toggle('active', doc.queryCommandState('underline'));
+                document.getElementById('ftPasteFormat').classList.toggle('active', !!copiedFormat);
+            } catch (e) {}
+            try {
+                const sz = doc.queryCommandValue('fontSize');
+                if (sz) document.getElementById('ftFontSize').value = sz;
+            } catch (e) {}
+        }
+
+        if (ftCell.style.display !== 'none') {
+            const cell = selectedCells[0] || lastClickedCell;
+            if (cell) {
+                const bg = cell.style.backgroundColor;
+                document.getElementById('ftCellBg').value = bg ? rgbToHex(bg) : '#ffffff';
+                const ws = cell.style.whiteSpace;
+                document.getElementById('ftWrapBtn').classList.toggle('active', ws !== 'nowrap');
+            }
+        }
     }
 
     function promptHighlight() {
@@ -2454,14 +2528,35 @@
         if (color) cmd('hiliteColor', color);
     }
 
+    function floatingCopyFormat() {
+        restoreSelection();
+        copiedFormat = captureFormat();
+        updateFloatingToolbar();
+    }
+
+    function floatingPasteFormat() {
+        if (!copiedFormat) return;
+        applyTextFormat(copiedFormat);
+        copiedFormat = null;
+        updateFloatingToolbar();
+        onPreviewEdit();
+    }
+
+    function floatingSetCellColor(color) {
+        setCellColor(color);
+        updateFloatingToolbar();
+    }
+
     // Show/hide floating toolbar on selection change
     let selectionChangeTimeout = null;
     function handleSelectionForFloatingToolbar() {
         clearTimeout(selectionChangeTimeout);
         selectionChangeTimeout = setTimeout(() => {
+            // Don't interfere when cell mode is active
+            if (selectedCells.length > 0) return;
             const sel = editorCore?.selection?.getSelection();
             if (sel && !sel.isCollapsed && sel.toString().trim() !== '') {
-                showFloatingToolbar();
+                showFloatingToolbar('text');
             } else {
                 hideFloatingToolbar();
             }
@@ -2990,6 +3085,13 @@
 
         if (cell) {
             handleCellClick(cell, e);
+            // Show cell toolbar only if no text is selected; text toolbar is handled by selectionchange
+            setTimeout(() => {
+                const sel = preview.contentDocument.getSelection();
+                if (!sel || sel.isCollapsed || sel.toString().trim() === '') {
+                    showFloatingToolbar('cell');
+                }
+            }, 50);
         } else {
             clearCellSelection();
         }
@@ -3051,10 +3153,13 @@
     }
 
     function clearCellSelection() {
+        const hadCells = selectedCells.length > 0;
         selectedCells.forEach(c => { if (c.isConnected) c.classList.remove('__csel'); });
         selectedCells = [];
         lastClickedCell = null;
         document.getElementById('cellSelCount').textContent = '0';
+        // Only hide floating toolbar if we were in cell mode
+        if (hadCells) hideFloatingToolbar();
     }
 
     function selectAllCells() {
