@@ -31,71 +31,145 @@
 
         .toolbar {
             background: white;
-            padding: 10px 20px;
+            padding: 8px 16px;
             display: flex;
-            gap: 10px;
-            border-bottom: 1px solid #ddd;
+            gap: 8px;
+            border-bottom: 1px solid #e5e7eb;
             align-items: center;
             flex-shrink: 0;
         }
 
         /* ── Shared toolbar bar styles ─────────────────────── */
         .format-toolbar, .table-toolbar {
-            background: #f9fafb;
+            background: #fafafa;
             padding: 5px 10px;
             display: flex;
             flex-wrap: wrap;
             gap: 2px;
-            border-bottom: 2px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
             align-items: center;
             flex-shrink: 0;
         }
-        .table-toolbar { background: #eff6ff; border-bottom-color: #bfdbfe; }
+        .table-toolbar { background: #f0f7ff; border-bottom-color: #bfdbfe; }
 
         .format-toolbar button, .table-toolbar button {
-            padding: 3px 7px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
-            background: white;
+            padding: 3px 8px;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            background: transparent;
             font-size: 13px;
-            height: 26px;
+            height: 32px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             white-space: nowrap;
-            font-family: Arial, sans-serif;
+            color: #374151;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
         }
 
         .format-toolbar button:hover, .table-toolbar button:hover {
-            background: #f3f4f6;
-            border-color: #9ca3af;
+            background: #e5e7eb;
+            color: #111827;
         }
 
         .format-toolbar button.active, .table-toolbar button.active {
-            background: #dbeafe;
-            border-color: #3b82f6;
-            color: #1d4ed8;
+            background: #eff6ff;
+            color: #2563eb;
+            font-weight: 600;
         }
 
         .format-toolbar select, .table-toolbar select {
-            height: 26px;
-            padding: 0 4px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
+            height: 32px;
+            padding: 0 6px;
+            border: 1px solid transparent;
+            border-radius: 6px;
             font-size: 12px;
-            background: white;
+            background: transparent;
             cursor: pointer;
+            color: #374151;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .format-toolbar select:hover, .table-toolbar select:hover {
+            background: #e5e7eb;
+        }
+        .format-toolbar select:focus, .table-toolbar select:focus {
+            border-color: #3b82f6;
+            outline: none;
         }
 
         .format-toolbar input[type="color"], .table-toolbar input[type="color"] {
-            width: 26px;
-            height: 26px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            border: 1px solid transparent;
+            border-radius: 6px;
             cursor: pointer;
-            padding: 1px 2px;
+            padding: 2px 3px;
             vertical-align: middle;
+            transition: border-color 0.15s ease;
+        }
+        .format-toolbar input[type="color"]:hover, .table-toolbar input[type="color"]:hover {
+            border-color: #d1d5db;
+        }
+
+        /* ── Color picker with hex input ─────────────────── */
+        .color-picker-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            vertical-align: middle;
+        }
+        .color-picker-swatch {
+            width: 28px;
+            height: 28px;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: border-color 0.15s ease;
+        }
+        .color-picker-swatch:hover { border-color: #9ca3af; }
+        .color-picker-popover {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 10002;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 8px;
+            margin-top: 4px;
+            gap: 6px;
+            flex-direction: column;
+            align-items: stretch;
+            min-width: 160px;
+        }
+        .color-picker-popover.open { display: flex; }
+        .color-picker-popover input[type="color"] {
+            width: 100%;
+            height: 36px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 2px;
+        }
+        .color-picker-popover input[type="text"] {
+            width: 100%;
+            height: 30px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 0 8px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            box-sizing: border-box;
+        }
+        .color-picker-popover input[type="text"]:focus {
+            border-color: #3b82f6;
+            outline: none;
         }
 
         /* ── Searchable font picker ───────────────────────── */
@@ -105,20 +179,22 @@
             vertical-align: middle;
         }
         .font-picker-toggle {
-            height: 26px;
+            height: 32px;
             min-width: 140px;
             max-width: 180px;
-            padding: 0 22px 0 6px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
+            padding: 0 22px 0 8px;
+            border: 1px solid transparent;
+            border-radius: 6px;
             font-size: 12px;
-            background: white;
+            background: transparent;
             cursor: pointer;
             text-align: left;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             position: relative;
+            color: #374151;
+            transition: background 0.15s ease, border-color 0.15s ease;
         }
         .font-picker-toggle::after {
             content: '\25BC';
@@ -131,7 +207,7 @@
             pointer-events: none;
         }
         .font-picker-toggle:hover {
-            border-color: #9ca3af;
+            background: #e5e7eb;
         }
         .font-picker-dropdown {
             display: none;
@@ -186,12 +262,17 @@
         }
 
         .format-toolbar input[type="number"], .table-toolbar input[type="number"] {
-            width: 48px;
-            height: 24px;
-            padding: 0 4px;
-            border: 1px solid #d1d5db;
-            border-radius: 3px;
+            width: 50px;
+            height: 32px;
+            padding: 0 6px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
             font-size: 12px;
+            transition: border-color 0.15s ease;
+        }
+        .format-toolbar input[type="number"]:focus, .table-toolbar input[type="number"]:focus {
+            border-color: #3b82f6;
+            outline: none;
         }
 
         .format-toolbar label, .table-toolbar label {
@@ -199,27 +280,36 @@
             align-items: center;
             gap: 1px;
             cursor: pointer;
+            height: 32px;
+            padding: 0 4px;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+        }
+        .format-toolbar label:hover, .table-toolbar label:hover {
+            background: #e5e7eb;
         }
 
         .sep {
             display: inline-block;
             width: 1px;
-            height: 18px;
-            background: #d1d5db;
-            margin: 0 3px;
+            height: 16px;
+            background: #e5e7eb;
+            margin: 0 6px;
             vertical-align: middle;
             flex-shrink: 0;
         }
 
         .tb-label {
-            font-size: 11px;
-            color: #6b7280;
+            font-size: 10px;
+            color: #9ca3af;
             font-weight: 600;
             white-space: nowrap;
             margin: 0 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
-        .table-toolbar .tb-label { color: #3b82f6; }
+        .table-toolbar .tb-label { color: #60a5fa; }
 
         button.primary {
             background: #2563eb;
@@ -228,22 +318,54 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
+            height: 34px;
+            font-weight: 500;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            transition: background 0.15s ease, box-shadow 0.15s ease;
+        }
+        button.primary:hover {
+            background: #1d4ed8;
+            box-shadow: 0 1px 3px rgba(37,99,235,0.3);
         }
 
         button.secondary {
-            background: #e5e7eb;
+            background: transparent;
             padding: 8px 14px;
-            border: none;
+            border: 1px solid #e5e7eb;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
+            height: 34px;
+            color: #374151;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        }
+        button.secondary:hover {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+            color: #111827;
         }
 
         .toolbar select {
-            padding: 6px;
+            padding: 6px 8px;
             border-radius: 6px;
-            border: 1px solid #d1d5db;
+            border: 1px solid #e5e7eb;
+            height: 34px;
+            font-size: 13px;
+            color: #374151;
+            background: transparent;
+            cursor: pointer;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .toolbar select:hover {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+        }
+        .toolbar select:focus {
+            border-color: #3b82f6;
+            outline: none;
         }
 
         /* ── Layout ────────────────────────────────────────── */
@@ -385,6 +507,114 @@
             cursor: pointer;
             background: transparent;
             padding: 1px;
+        }
+
+        /* ── Template Management Modal ────────────────────── */
+        .template-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(2px);
+            z-index: 10001;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .template-modal-overlay.show { display: flex; }
+        .template-modal {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            padding: 24px;
+            width: 420px;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .template-modal h3 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+        }
+        .template-modal .close-btn {
+            position: absolute;
+            top: 12px; right: 12px;
+            background: transparent;
+            border: none;
+            font-size: 22px;
+            color: #9ca3af;
+            cursor: pointer;
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 6px;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .template-modal .close-btn:hover { background: #e5e7eb; color: #374151; }
+        .template-list {
+            overflow-y: auto;
+            flex: 1;
+        }
+        .template-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 8px;
+            transition: background 0.15s ease;
+        }
+        .template-item:hover { background: #f9fafb; }
+        .template-item-name {
+            font-size: 14px;
+            color: #374151;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .template-item-badge {
+            font-size: 10px;
+            color: #9ca3af;
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+        .template-item-actions {
+            display: flex;
+            gap: 4px;
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+        .template-item-actions button {
+            padding: 4px 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: transparent;
+            font-size: 12px;
+            cursor: pointer;
+            color: #374151;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .template-item-actions button:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+        .template-item-actions button.delete-btn {
+            color: #ef4444;
+            border-color: transparent;
+        }
+        .template-item-actions button.delete-btn:hover {
+            background: #fef2f2;
+            border-color: #fca5a5;
+        }
+        .template-empty {
+            padding: 24px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
         }
 
         /* ── Full-screen mode ──────────────────────────────── */
@@ -695,15 +925,26 @@
     </div>
 </div>
 
+<!-- ── Template Management Modal ──────────────────────────────────────── -->
+<div class="template-modal-overlay" id="templateModalOverlay" onclick="closeManageTemplates(event)">
+    <div class="template-modal" onclick="event.stopPropagation()">
+        <button class="close-btn" onclick="closeManageTemplates()">&times;</button>
+        <h3>Manage Templates</h3>
+        <div class="template-list" id="templateList"></div>
+        <div class="template-empty" id="templateEmpty" style="display:none">
+            No saved templates yet. Use "Save Template" to create one.
+        </div>
+    </div>
+</div>
+
 <div class="toolbar">
     <button class="primary" onclick="copyCode()">Copy HTML</button>
     <button class="secondary" onclick="exportHTML()">⬇ Export HTML</button>
-    <select onchange="loadTemplate(this.value)">
+    <select id="templateSelect" onchange="loadTemplate(this.value)">
         <option value="">Load Template</option>
-        <option value="basic">Basic Page</option>
-        <option value="card">Card Layout</option>
-        <option value="email">Simple Email</option>
     </select>
+    <button class="secondary" onclick="saveAsTemplate()">Save Template</button>
+    <button class="secondary" onclick="openManageTemplates()">Manage</button>
     <button class="secondary" id="btnToggleSource" onclick="toggleSource()" title="Toggle HTML source pane">&#9664; Hide Source</button>
     <button class="secondary" onclick="toggleFullscreen()" title="Full-screen mode (Esc to exit)">⛶ Fullscreen</button>
     <button class="secondary" onclick="toggleStats()" title="Show document statistics">📊 Stats</button>
@@ -760,14 +1001,22 @@
 
     <span class="sep"></span>
 
-    <label title="Text Color">
-        <span style="font-weight:bold;font-size:13px;border-bottom:3px solid #e74c3c;line-height:1.1">A</span>
-        <input type="color" id="textColor" value="#000000" oninput="cmd('foreColor', this.value)">
-    </label>
-    <label title="Highlight Color" style="margin-left:3px">
-        <span style="font-weight:bold;font-size:13px;background:#ffe066;padding:0 2px;line-height:1.1">A</span>
-        <input type="color" id="bgColor" value="#ffff00" oninput="cmd('hiliteColor', this.value)">
-    </label>
+    <div class="color-picker-wrap" title="Text Color">
+        <span style="font-weight:bold;font-size:13px;border-bottom:3px solid #e74c3c;line-height:1.1;margin-right:2px">A</span>
+        <div class="color-picker-swatch" id="textColorSwatch" style="background:#000000" onclick="event.stopPropagation(); toggleColorPopover('textColorPop')"></div>
+        <div class="color-picker-popover" id="textColorPop" onclick="event.stopPropagation()">
+            <input type="color" id="textColor" value="#000000" oninput="onColorPick('textColor', this.value); cmd('foreColor', this.value)">
+            <input type="text" maxlength="7" value="#000000" placeholder="#000000" oninput="onHexInput('textColor', this.value)" onkeydown="if(event.key==='Enter'){this.blur(); toggleColorPopover('textColorPop')}">
+        </div>
+    </div>
+    <div class="color-picker-wrap" title="Highlight Color" style="margin-left:3px">
+        <span style="font-weight:bold;font-size:13px;background:#ffe066;padding:0 2px;line-height:1.1;margin-right:2px">A</span>
+        <div class="color-picker-swatch" id="bgColorSwatch" style="background:#ffff00" onclick="event.stopPropagation(); toggleColorPopover('bgColorPop')"></div>
+        <div class="color-picker-popover" id="bgColorPop" onclick="event.stopPropagation()">
+            <input type="color" id="bgColor" value="#ffff00" oninput="onColorPick('bgColor', this.value); cmd('hiliteColor', this.value)">
+            <input type="text" maxlength="7" value="#ffff00" placeholder="#ffff00" oninput="onHexInput('bgColor', this.value)" onkeydown="if(event.key==='Enter'){this.blur(); toggleColorPopover('bgColorPop')}">
+        </div>
+    </div>
 
     <span class="sep"></span>
 
@@ -842,7 +1091,13 @@
         <option value="double">Double</option>
         <option value="none">None</option>
     </select>
-    <input type="color" id="tblBorderC" value="#000000" title="Border Color">
+    <div class="color-picker-wrap">
+        <div class="color-picker-swatch" id="tblBorderCSwatch" style="background:#000000" onclick="event.stopPropagation(); toggleColorPopover('tblBorderCPop')"></div>
+        <div class="color-picker-popover" id="tblBorderCPop" onclick="event.stopPropagation()">
+            <input type="color" id="tblBorderC" value="#000000" oninput="onColorPick('tblBorderC', this.value)">
+            <input type="text" maxlength="7" value="#000000" placeholder="#000000" oninput="onHexInput('tblBorderC', this.value)" onkeydown="if(event.key==='Enter'){this.blur(); toggleColorPopover('tblBorderCPop')}">
+        </div>
+    </div>
     <button title="All Borders"    onclick="applyBorder('all')">All</button>
     <button title="Top Border"     onclick="applyBorder('Top')">T</button>
     <button title="Right Border"   onclick="applyBorder('Right')">R</button>
@@ -853,7 +1108,13 @@
 
     <!-- Cell color -->
     <span class="tb-label">Cell Color:</span>
-    <input type="color" id="tblCellColor" value="#ffffff" title="Cell Background Color" oninput="setCellColor(this.value)">
+    <div class="color-picker-wrap">
+        <div class="color-picker-swatch" id="tblCellColorSwatch" style="background:#ffffff" onclick="event.stopPropagation(); toggleColorPopover('tblCellColorPop')"></div>
+        <div class="color-picker-popover" id="tblCellColorPop" onclick="event.stopPropagation()">
+            <input type="color" id="tblCellColor" value="#ffffff" oninput="onColorPick('tblCellColor', this.value); setCellColor(this.value)">
+            <input type="text" maxlength="7" value="#ffffff" placeholder="#ffffff" oninput="onHexInput('tblCellColor', this.value, true)" onkeydown="if(event.key==='Enter'){this.blur(); toggleColorPopover('tblCellColorPop')}">
+        </div>
+    </div>
     <button title="Remove Cell Color" onclick="setCellColor('')" style="color:#dc2626">&#10005;</button>
     <span class="sep"></span>
 
@@ -2772,6 +3033,62 @@
         }, 3000);
     }
 
+    // ── Color Picker with Hex Input ────────────────────────────────────────
+
+    function toggleColorPopover(popId) {
+        const pop = document.getElementById(popId);
+        if (!pop) return;
+        const isOpen = pop.classList.contains('open');
+        // Close all other popovers first
+        document.querySelectorAll('.color-picker-popover.open').forEach(p => p.classList.remove('open'));
+        if (!isOpen) {
+            pop.classList.add('open');
+            // Stop click from propagating to document close handler
+            setTimeout(() => {
+                document.addEventListener('click', closeAllColorPopovers, { once: true, capture: true });
+            }, 0);
+        }
+    }
+
+    function closeAllColorPopovers(e) {
+        const openPop = document.querySelector('.color-picker-popover.open');
+        if (openPop && !openPop.contains(e?.target)) {
+            openPop.classList.remove('open');
+        } else if (openPop) {
+            // Re-attach if clicked inside popover
+            setTimeout(() => {
+                document.addEventListener('click', closeAllColorPopovers, { once: true, capture: true });
+            }, 0);
+        }
+    }
+
+    function onColorPick(id, value) {
+        // Sync swatch and hex text input
+        const swatch = document.getElementById(id + 'Swatch');
+        if (swatch) swatch.style.background = value;
+        const pop = document.getElementById(id + 'Pop');
+        if (pop) {
+            const hex = pop.querySelector('input[type="text"]');
+            if (hex) hex.value = value.toUpperCase();
+        }
+    }
+
+    function onHexInput(id, value, isCellColor) {
+        // Validate and apply hex
+        let hex = value.trim();
+        if (!hex.startsWith('#')) hex = '#' + hex;
+        if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+            const colorInput = document.getElementById(id);
+            if (colorInput) colorInput.value = hex;
+            const swatch = document.getElementById(id + 'Swatch');
+            if (swatch) swatch.style.background = hex;
+            // Trigger the appropriate action
+            if (id === 'textColor') cmd('foreColor', hex);
+            else if (id === 'bgColor') cmd('hiliteColor', hex);
+            else if (id === 'tblCellColor' && isCellColor) setCellColor(hex);
+        }
+    }
+
     // ── Responsive Preview Modes ──────────────────────────────────────────
     let currentPreviewMode = 'desktop';
 
@@ -3183,7 +3500,12 @@
         document.getElementById('tblCellH').value   = parseInt(cell.style.height)  || '';
         document.getElementById('tblCellPad').value  = parseInt(cell.style.padding) || '';
         const bg = cell.style.backgroundColor;
-        document.getElementById('tblCellColor').value = bg ? rgbToHex(bg) : '#ffffff';
+        const hexVal = bg ? rgbToHex(bg) : '#ffffff';
+        document.getElementById('tblCellColor').value = hexVal;
+        const swatch = document.getElementById('tblCellColorSwatch');
+        if (swatch) swatch.style.background = hexVal;
+        const pop = document.getElementById('tblCellColorPop');
+        if (pop) { const hex = pop.querySelector('input[type="text"]'); if (hex) hex.value = hexVal.toUpperCase(); }
         updateWrapButton(cell.style.whiteSpace !== 'nowrap');
     }
 
@@ -3692,35 +4014,102 @@
         alert('HTML copied to clipboard!');
     }
 
-    function loadTemplate(type) {
-        if (!type) return;
-        const templates = {
-            basic: `<!DOCTYPE html>
-<html>
-<head>
-<title>Basic Page</title>
-</head>
-<body>
-<h1>Hello World</h1>
-<p>This is a simple template.</p>
-</body>
-</html>`,
-            card: `<div style="max-width:300px;padding:20px;border:1px solid #ccc;border-radius:10px;">
-<h2>Card Title</h2>
-<p>This is a simple card layout.</p>
-<button>Click Me</button>
-</div>`,
-            email: `<table width="100%" cellpadding="0" cellspacing="0">
-<tr>
-<td align="center">
-<h1>Welcome!</h1>
-<p>This is a simple email template.</p>
-</td>
-</tr>
-</table>`
-        };
-        editor.value = templates[type];
+    // ── Templates ──────────────────────────────────────────────────────
+
+    function getUserTemplates() {
+        try { return JSON.parse(localStorage.getItem('userTemplates') || '{}'); }
+        catch { return {}; }
+    }
+    function setUserTemplates(obj) {
+        localStorage.setItem('userTemplates', JSON.stringify(obj));
+    }
+
+    function loadTemplate(key) {
+        if (!key) return;
+        const sel = document.getElementById('templateSelect');
+        const user = getUserTemplates();
+        if (!user[key]) { sel.value = ''; return; }
+        if (!confirm('Replace current content with "' + key + '" template?')) {
+            sel.value = '';
+            return;
+        }
+        editor.value = user[key];
         updatePreview();
+        sel.value = '';
+        showToast('Template loaded');
+    }
+
+    function saveAsTemplate() {
+        const name = prompt('Template name:');
+        if (!name || !name.trim()) return;
+        const trimmed = name.trim();
+
+        const user = getUserTemplates();
+        if (user[trimmed] && !confirm('Template "' + trimmed + '" already exists. Overwrite?')) return;
+
+        user[trimmed] = editor.value;
+        setUserTemplates(user);
+        refreshTemplateDropdown();
+        showToast('Template "' + trimmed + '" saved');
+    }
+
+    function refreshTemplateDropdown() {
+        const sel = document.getElementById('templateSelect');
+        sel.innerHTML = '<option value="">Load Template</option>';
+
+        const user = getUserTemplates();
+        const userKeys = Object.keys(user).sort((a, b) => a.localeCompare(b));
+        userKeys.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            sel.appendChild(opt);
+        });
+    }
+
+    function openManageTemplates() {
+        renderTemplateList();
+        document.getElementById('templateModalOverlay').classList.add('show');
+    }
+
+    function closeManageTemplates(e) {
+        if (e && e.target !== e.currentTarget) return;
+        document.getElementById('templateModalOverlay').classList.remove('show');
+    }
+
+    function renderTemplateList() {
+        const list = document.getElementById('templateList');
+        const empty = document.getElementById('templateEmpty');
+        list.innerHTML = '';
+
+        const user = getUserTemplates();
+        const userKeys = Object.keys(user).sort((a, b) => a.localeCompare(b));
+
+        userKeys.forEach(name => {
+            const item = document.createElement('div');
+            item.className = 'template-item';
+            const safeName = name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            item.innerHTML = `
+                <span class="template-item-name">${name}</span>
+                <div class="template-item-actions">
+                    <button onclick="loadTemplate('${safeName}'); closeManageTemplates()">Load</button>
+                    <button class="delete-btn" onclick="deleteUserTemplate('${safeName}')">Delete</button>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+
+        empty.style.display = userKeys.length === 0 ? 'block' : 'none';
+    }
+
+    function deleteUserTemplate(name) {
+        if (!confirm('Delete template "' + name + '"?')) return;
+        const user = getUserTemplates();
+        delete user[name];
+        setUserTemplates(user);
+        refreshTemplateDropdown();
+        renderTemplateList();
+        showToast('Template "' + name + '" deleted');
     }
 
     // ── Init ─────────────────────────────────────────────────────────────
@@ -3728,6 +4117,7 @@
     const saved = localStorage.getItem('savedCode');
     editor.value = saved || '<h1>Start editing your HTML here</h1>';
     updatePreview();
+    refreshTemplateDropdown();
 </script>
 
 </body>
