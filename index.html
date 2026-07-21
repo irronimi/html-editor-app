@@ -1666,7 +1666,15 @@
         cleanForSync();
 
         const doc = preview.contentDocument;
-        let html = doc.documentElement.outerHTML;
+
+        // Apply Spire.Doc sanitization to body content (always on)
+        const bodyHTML = sanitizeForSpireDoc(doc.body.innerHTML);
+
+        // Reconstruct full document with sanitized body
+        const tempDoc = doc.cloneNode(true);
+        tempDoc.body.innerHTML = bodyHTML;
+        let html = tempDoc.documentElement.outerHTML;
+
         if (editor.value.trimStart().toLowerCase().startsWith('<!doctype')) {
             html = '<!DOCTYPE html>\n' + html;
         }
@@ -1698,11 +1706,59 @@
             return;
         }
 
+        // Special handling for fontSize - use inline CSS instead of deprecated <font> tags
+        if (command === 'fontSize') {
+            restoreSelection();
+            applyFontSizeInline(value);
+            saveSelection();
+            onPreviewEdit();
+            updateToolbarState();
+            return;
+        }
+
         restoreSelection();
         const execCmd = new ExecCommand(editorCore, command, value);
         editorCore.executeCommand(execCmd);
         onPreviewEdit();
         updateToolbarState();
+    }
+
+    /**
+     * Apply font size using inline CSS instead of deprecated <font> tags
+     * Ensures Spire.Doc compatibility
+     */
+    function applyFontSizeInline(sizeValue) {
+        const doc = preview.contentDocument;
+        const sel = doc.getSelection();
+
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+
+        // Map execCommand size values (1-7) to pixel sizes
+        const sizeMap = {
+            1: '10px', 2: '13px', 3: '16px', 4: '18px',
+            5: '24px', 6: '32px', 7: '48px'
+        };
+        const fontSize = sizeMap[sizeValue] || '16px';
+
+        const range = sel.getRangeAt(0);
+        const span = doc.createElement('span');
+        span.style.fontSize = fontSize;
+
+        try {
+            // Try to wrap selection cleanly
+            range.surroundContents(span);
+        } catch(e) {
+            // If can't wrap (crosses element boundaries), extract and wrap
+            const fragment = range.extractContents();
+            span.appendChild(fragment);
+            range.insertNode(span);
+        }
+
+        // Reselect the content
+        sel.removeAllRanges();
+        const newRange = doc.createRange();
+        newRange.selectNodeContents(span);
+        sel.addRange(newRange);
     }
 
     // ── Font application (handles weight variants) ──────────────────────
@@ -1945,16 +2001,17 @@
         const cols = parseInt(prompt('Number of columns:', '3'));
         if (!rows || !cols || isNaN(rows) || isNaN(cols) || rows < 1 || cols < 1) return;
 
-        let html = '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin:8px 0">';
+        // Build table HTML without deprecated attributes - Spire.Doc compatible
+        let html = '<table style="border-collapse:collapse; width:100%; margin:8px 0; border:1px solid #d1d5db;">';
         html += '<thead><tr>';
         for (let c = 0; c < cols; c++) {
-            html += `<th style="background:#f3f4f6;padding:8px 10px;border:1px solid #d1d5db;text-align:left">Header ${c + 1}</th>`;
+            html += `<th style="background:#f3f4f6; padding:8px 10px; border:1px solid #d1d5db; text-align:left; font-weight:bold;">Header ${c + 1}</th>`;
         }
         html += '</tr></thead><tbody>';
         for (let r = 0; r < rows - 1; r++) {
             html += '<tr>';
             for (let c = 0; c < cols; c++) {
-                html += `<td style="padding:8px 10px;border:1px solid #d1d5db">Cell</td>`;
+                html += `<td style="padding:8px 10px; border:1px solid #d1d5db;">Cell</td>`;
             }
             html += '</tr>';
         }
@@ -2660,15 +2717,14 @@
 
     // ── Media (YouTube/Vimeo) embedding ───────────────────────────────────
     function insertMedia() {
-        const url = prompt('Enter YouTube or Vimeo URL:', '');
-        if (!url) return;
-
-        const embedCode = getEmbedCode(url);
-        if (embedCode) {
-            cmd('insertHTML', embedCode);
-        } else {
-            alert('Invalid URL. Please enter a YouTube or Vimeo URL.');
-        }
+        // Media embeds disabled for Spire.Doc compatibility
+        // Iframes cannot be rendered in Word documents
+        alert(
+            'Media embeds are not supported in Word documents.\n\n' +
+            'This feature has been disabled for Spire.Doc compatibility.\n\n' +
+            'Consider inserting a link to the video instead using the Link button.'
+        );
+        return;
     }
 
     function getEmbedCode(url) {
@@ -2983,7 +3039,8 @@
 
     // ── Export HTML ───────────────────────────────────────────────────────
     function exportHTML() {
-        const html = editor.value;
+        // Ensure Spire.Doc compatible HTML is exported
+        const html = sanitizeForSpireDoc(editor.value);
         const blob = new Blob([html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -2994,7 +3051,7 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        showToast('✓ HTML exported successfully!', 'success');
+        showToast('✓ HTML exported successfully (Spire.Doc compatible)!', 'success');
     }
 
     // ── Toast Notifications ───────────────────────────────────────────────
@@ -4010,8 +4067,10 @@
     // ══════════════════════════════════════════════════════════════════════
 
     function copyCode() {
-        navigator.clipboard.writeText(editor.value);
-        alert('HTML copied to clipboard!');
+        // Ensure Spire.Doc compatible HTML is copied
+        const html = sanitizeForSpireDoc(editor.value);
+        navigator.clipboard.writeText(html);
+        alert('HTML copied to clipboard (Spire.Doc compatible)!');
     }
 
     // ── Templates ──────────────────────────────────────────────────────
@@ -4110,6 +4169,162 @@
         refreshTemplateDropdown();
         renderTemplateList();
         showToast('Template "' + name + '" deleted');
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  SPIRE.DOC HTML SANITIZATION
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Main sanitization function for Spire.Doc compatibility
+     * Converts browser-generated HTML to Word-compatible HTML
+     */
+    function sanitizeForSpireDoc(html) {
+        if (!html || !html.trim()) return html;
+
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            // Apply all sanitization steps
+            normalizeFontTags(doc.body);
+            removeMediaEmbeds(doc.body);
+            cleanTableAttributes(doc.body);
+            removeUnsupportedStyles(doc.body);
+            normalizeFormatting(doc.body);
+
+            return doc.body.innerHTML;
+        } catch (e) {
+            console.error('Error sanitizing HTML for Spire.Doc:', e);
+            return html; // Return original if sanitization fails
+        }
+    }
+
+    /**
+     * Replace deprecated <font size=""> tags with inline CSS
+     */
+    function normalizeFontTags(element) {
+        const fontTags = element.querySelectorAll('font[size]');
+        fontTags.forEach(font => {
+            const size = parseInt(font.getAttribute('size'));
+            const sizeMap = {
+                1: '10px', 2: '13px', 3: '16px', 4: '18px',
+                5: '24px', 6: '32px', 7: '48px'
+            };
+            const fontSize = sizeMap[size] || '16px';
+
+            const span = element.ownerDocument.createElement('span');
+            span.style.fontSize = fontSize;
+            span.innerHTML = font.innerHTML;
+
+            // Copy any other attributes
+            for (let i = 0; i < font.attributes.length; i++) {
+                const attr = font.attributes[i];
+                if (attr.name !== 'size') {
+                    span.setAttribute(attr.name, attr.value);
+                }
+            }
+
+            font.parentNode.replaceChild(span, font);
+        });
+    }
+
+    /**
+     * Remove all media embeds (iframes, video containers)
+     */
+    function removeMediaEmbeds(element) {
+        // Remove YouTube/Vimeo iframe containers (padding-bottom trick)
+        const mediaDivs = element.querySelectorAll('div[style*="padding-bottom:56.25%"]');
+        mediaDivs.forEach(div => div.remove());
+
+        // Remove any remaining iframes
+        const iframes = element.querySelectorAll('iframe');
+        iframes.forEach(iframe => iframe.remove());
+    }
+
+    /**
+     * Remove deprecated table attributes, ensure CSS-only styling
+     */
+    function cleanTableAttributes(element) {
+        const tables = element.querySelectorAll('table');
+        tables.forEach(table => {
+            table.removeAttribute('border');
+            table.removeAttribute('cellpadding');
+            table.removeAttribute('cellspacing');
+
+            // Ensure border-collapse is in inline styles
+            if (!table.style.borderCollapse) {
+                table.style.borderCollapse = 'collapse';
+            }
+        });
+    }
+
+    /**
+     * Remove CSS properties not supported by Word/Spire.Doc
+     */
+    function removeUnsupportedStyles(element) {
+        const allElements = element.querySelectorAll('*');
+        const unsupportedProps = [
+            'border-radius', 'box-shadow', 'position', 'z-index', 'transform',
+            'transition', 'animation', 'opacity', 'filter', 'clip-path',
+            'flex', 'grid', 'gap', 'align-items', 'justify-content',
+            'flex-direction', 'flex-wrap', 'flex-grow', 'flex-shrink',
+            'backdrop-filter', 'object-fit', 'object-position'
+        ];
+
+        allElements.forEach(el => {
+            if (!el.style) return;
+
+            // Remove unsupported properties
+            unsupportedProps.forEach(prop => {
+                el.style.removeProperty(prop);
+            });
+
+            // Remove vendor prefixes (-webkit-, -moz-, -ms-, -o-)
+            for (let i = el.style.length - 1; i >= 0; i--) {
+                const prop = el.style[i];
+                if (prop.startsWith('-webkit-') || prop.startsWith('-moz-') ||
+                    prop.startsWith('-ms-') || prop.startsWith('-o-')) {
+                    el.style.removeProperty(prop);
+                }
+            }
+
+            // Clean up empty style attributes
+            if (el.getAttribute('style') && !el.getAttribute('style').trim()) {
+                el.removeAttribute('style');
+            }
+        });
+    }
+
+    /**
+     * Normalize bold/italic tags to consistent elements
+     */
+    function normalizeFormatting(element) {
+        // Convert <b> to <strong>
+        element.querySelectorAll('b').forEach(b => {
+            const strong = element.ownerDocument.createElement('strong');
+            strong.innerHTML = b.innerHTML;
+
+            // Copy attributes
+            for (let i = 0; i < b.attributes.length; i++) {
+                strong.setAttribute(b.attributes[i].name, b.attributes[i].value);
+            }
+
+            b.parentNode.replaceChild(strong, b);
+        });
+
+        // Convert <i> to <em>
+        element.querySelectorAll('i').forEach(i => {
+            const em = element.ownerDocument.createElement('em');
+            em.innerHTML = i.innerHTML;
+
+            // Copy attributes
+            for (let j = 0; j < i.attributes.length; j++) {
+                em.setAttribute(i.attributes[j].name, i.attributes[j].value);
+            }
+
+            i.parentNode.replaceChild(em, i);
+        });
     }
 
     // ── Init ─────────────────────────────────────────────────────────────
